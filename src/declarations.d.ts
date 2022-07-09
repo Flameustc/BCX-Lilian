@@ -271,6 +271,7 @@ type BCX_Rule =
 	| "speech_restrict_whisper_receive"
 	| "speech_restrict_beep_send"
 	| "speech_restrict_beep_receive"
+	| "speech_restrict_instant_messenger"
 	| "speech_greet_order"
 	| "speech_block_antigarble"
 	// | "speech_replace_spoken_words"
@@ -395,6 +396,9 @@ type RuleCustomData = {
 		whitelistedMemberNumbers: number[];
 		autoreplyText: string;
 		onlyWhenBound: boolean;
+	},
+	speech_restrict_instant_messenger: {
+		allowedMembers: number[]
 	},
 	speech_greet_order: {
 		toGreetMemberNumbers: number[];

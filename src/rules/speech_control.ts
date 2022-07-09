@@ -620,6 +620,23 @@ export function initRules_bc_speech_control() {
 		}
 	});
 
+	registerRule("speech_restrict_instant_messenger", {
+		name: "Prevent using instant messenger",
+		type: RuleType.Block,
+		loggable: false,
+		shortDescription: "except to selected members",
+		longDescription: "This rule forbids PLAYER_NAME to use instant messenger to send any messages, except to the defined list of member numbers. Friends not in the defined list will always be displayed as \"Offline\" even if they are online. Receiving messages and looking at chat history is not affected.",
+		defaultLimit: ConditionsLimit.blocked,
+		dataDefinition: {
+			allowedMembers: {
+				type: "memberNumberList",
+				default: [],
+				description: "Members numbers still allowed to chat with:"
+			}
+		}
+		// Implemented in BCE
+	});
+
 	registerRule("speech_greet_order", {
 		name: "Order to greet club",
 		type: RuleType.Speech,
@@ -949,6 +966,7 @@ export function initRules_bc_speech_control() {
 					return true;
 				}
 				return state.customData?.mandatoryWords.some(i =>
+					(!/^[\x00-\xFF]*$/.test(i) && checkMsg.match(new RegExp(`${escapeRegExp(i.trim())}`, "iu"))) ||
 					checkMsg.match(
 						new RegExp(`([^\\p{L}]|^)${escapeRegExp(i.trim())}([^\\p{L}]|$)`, "iu")
 					)
