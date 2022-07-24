@@ -73,6 +73,17 @@ function toggleAntiblind(): boolean {
 	antiblind = !antiblind;
 	return true;
 }
+
+export function manipulateAntiblind(value: boolean): boolean {
+	if (value) {
+		const blockRule = RulesGetRuleState("block_antiblind");
+		if (blockRule.isEnforced) {
+			return false;
+		}
+	}
+	antiblind = value;
+	return true;
+}
 //#endregion
 
 //#region card deck

@@ -289,6 +289,7 @@ type BCX_Rule =
 	| "other_log_money"
 	// | "other_restrict_console_usage"
 	| "other_track_BCX_activation"
+	| "other_track_status"
 	| "setting_item_permission"
 	| "setting_forbid_lockpicking"
 	| "setting_forbid_SP_rooms"
@@ -444,6 +445,9 @@ type RuleCustomData = {
 	other_track_time: {
 		minimumPermittedRole: import("./modules/authority").AccessLevel;
 	},
+	other_track_status: {
+		minimumPermittedRole: import("./modules/authority").AccessLevel;
+	},
 	setting_item_permission: {
 		value: string;
 	},
@@ -534,6 +538,7 @@ type RuleInternalData = {
 	other_log_money: number;
 	other_track_BCX_activation: number;
 	other_track_time: number;
+	other_track_status: import("./track").TrackData;
 };
 
 type RuleCustomDataTypesMap = {

@@ -1,7 +1,7 @@
 import { ConditionsLimit, ModuleCategory } from "../constants";
 import { registerRule, RuleType } from "../modules/rules";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
-import { registerSpeechHook, SpeechMessageInfo, falteringSpeech, SpeechHookAllow } from "../modules/speech";
+import { registerSpeechHook, SpeechMessageInfo, falteringSpeech, SpeechHookAllow, manipulateAntigarble } from "../modules/speech";
 import { callOriginal, hookFunction } from "../patching";
 import { getChatroomCharacter } from "../characters";
 import { dictionaryProcess, escapeRegExp, isObject } from "../utils";
@@ -684,7 +684,12 @@ export function initRules_bc_speech_control() {
 			attempt_log: "PLAYER_NAME tried to use the antigarble command",
 			log: "PLAYER_NAME used the antigarble command"
 		},
-		defaultLimit: ConditionsLimit.normal
+		defaultLimit: ConditionsLimit.normal,
+		stateChange(state, newState) {
+			if (newState) {
+				manipulateAntigarble(0);
+			}
+		}
 		// Implemented externally
 	});
 

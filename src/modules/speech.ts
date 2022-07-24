@@ -178,6 +178,20 @@ function setAntigarble(value: number): boolean {
 	antigarble = value;
 	return true;
 }
+
+export function manipulateAntigarble(value: number) {
+	if (![0, 1, 2].includes(value)) {
+		throw new Error("Bad antigarble value, expected 0/1/2");
+	}
+	if (value !== 0) {
+		const blockRule = RulesGetRuleState("speech_block_antigarble");
+		if (blockRule.isEnforced) {
+			return false;
+		}
+	}
+	antigarble = value;
+	return true;
+}
 //#endregion
 
 export class ModuleSpeech extends BaseModule {

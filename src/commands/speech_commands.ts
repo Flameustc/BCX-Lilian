@@ -5,6 +5,7 @@ import { hookFunction } from "../patching";
 import { registerSpeechHook, SpeechHookAllow, SpeechMessageInfo } from "../modules/speech";
 import { ChatroomCharacter, getAllCharactersInRoom } from "../characters";
 import { Command_fixExclamationMark, Command_pickAutocomplete } from "../modules/commands";
+import { ReplaceTrackData } from "track";
 
 export function initCommands_speech() {
 	registerCommand("forcesay", {
@@ -25,7 +26,12 @@ export function initCommands_speech() {
 				));
 				return false;
 			}
-			const sentence = argv.join(" ").trim();
+			let sentence = argv.join(" ").trim();
+			sentence = ReplaceTrackData(sentence);
+			if (sentence === "undefined") {
+				respond(`Wrong expression`);
+				return false;
+			}
 			if (sentence.includes("(")) {
 				respond(`The text after '.forcesay' must not contain OOC parts in round brackets`);
 				return false;
@@ -122,7 +128,7 @@ export function initCommands_speech() {
 				respond(`${Player.Name} cannot receive a say-command, while still dealing with a typing task command.`);
 				return false;
 			}
-			const sentence = argv.join(" ").trim();
+			let sentence = argv.join(" ").trim();
 			if (!sentence || argv.length < 1) {
 				respond(Command_fixExclamationMark(sender,
 					`!say usage:\n` +
@@ -131,7 +137,11 @@ export function initCommands_speech() {
 				));
 				return false;
 			}
-
+			sentence = ReplaceTrackData(sentence);
+			if (sentence === "undefined") {
+				respond(`Wrong expression`);
+				return false;
+			}
 			if (sentence.includes("(")) {
 				respond(`The text after '.say' must not contain OOC parts in round brackets`);
 				return false;

@@ -5,6 +5,7 @@ import { hookFunction } from "../patching";
 import { isNModClient, getCharacterName } from "../utilsClub";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
 import { getAllCharactersInRoom } from "../characters";
+import { manipulateAntiblind } from "modules/clubUtils";
 
 export function initRules_bc_blocks() {
 	const NMod = isNModClient();
@@ -826,7 +827,12 @@ export function initRules_bc_blocks() {
 			attempt_log: "PLAYER_NAME tried to use the antiblind command",
 			log: "PLAYER_NAME used the antiblind command"
 		},
-		defaultLimit: ConditionsLimit.normal
+		defaultLimit: ConditionsLimit.normal,
+		stateChange(state, newState) {
+			if (newState) {
+				manipulateAntiblind(false);
+			}
+		},
 		// Implemented externally
 	});
 

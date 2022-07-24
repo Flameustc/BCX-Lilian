@@ -105,6 +105,31 @@ export function formatTimeInterval(time: number, mode: "full" | "short" = "full"
 	return res;
 }
 
+export function formatTimeIntervalCN(time: number) {
+	let res = "";
+	if (time < 0) {
+		res = "-";
+		time *= -1;
+	}
+	const seconds = Math.floor(time / 1000);
+	const minutes = Math.floor(seconds / 60);
+	const hours = Math.floor(minutes / 60);
+	const days = Math.floor(hours / 24);
+	if (days > 0) {
+		res += `${days}天`;
+	}
+	if (hours > 0) {
+		res += `${hours % 24}小时`;
+	}
+	if (minutes > 0) {
+		res += `${minutes % 60}分钟`;
+	}
+	if (seconds >= 0) {
+		res += `${seconds % 60}秒`;
+	}
+	return res;
+}
+
 /**
  * Replaces texts in `text` using data in `dictionary`, adding some default replacements.
  * Default replacements:
