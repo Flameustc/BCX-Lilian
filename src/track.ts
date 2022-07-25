@@ -17,7 +17,8 @@ export function ReplaceTrackData(str: string): string {
 		expr = expr.replace(/\{(\w*?_time)\}/gu, "$${formatTimeIntervalCN(state.internalData.$1)}");
 		expr = expr.replace(/\{(\w*?)\}/gu, "$${state.internalData.$1}");
 		expr = "`" + expr + "`";
+		// eslint-disable-next-line no-eval
+		return eval(expr) as string;
 	}
-	// eslint-disable-next-line no-eval
-	return eval(expr) as string;
+	return str;
 }

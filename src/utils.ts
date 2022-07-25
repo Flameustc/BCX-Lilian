@@ -122,7 +122,7 @@ export function formatTimeIntervalCN(time: number) {
 		res += `${hours % 24}小时`;
 	}
 	if (minutes > 0) {
-		res += `${minutes % 60}分钟`;
+		res += `${minutes % 60}分`;
 	}
 	if (seconds >= 0) {
 		res += `${seconds % 60}秒`;
