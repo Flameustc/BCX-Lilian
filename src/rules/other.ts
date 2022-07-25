@@ -3,11 +3,12 @@ import { BCXLoadedBeforeLogin, BCXLoginTimedata, BCX_setTimeout } from "../BCXCo
 import { ConditionsLimit, ModuleCategory } from "../constants";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
 import { registerWhisperCommand } from "../modules/commands";
-import { registerRule, RuleType } from "../modules/rules";
+import { registerRule, RuleState, RuleType } from "../modules/rules";
 import { hookFunction } from "patching";
 import { formatTimeInterval, isObject } from "../utils";
 import { ChatRoomSendLocal } from "../utilsClub";
 import { ReplaceTrackData, TrackData } from "../track";
+import { update } from "lodash-es";
 
 export function initRules_other() {
 	let lastAction = Date.now();
@@ -279,39 +280,74 @@ export function initRules_other() {
 	});
 
 	const diffData: TrackData = {
+		active_time: 0,
+		edged_time: 0,
 		orgasm_count: 0,
 		ruined_count: 0,
-		edged_time: 0,
-		active_time: 0,
+		no_active_time: 0,
+		no_edged_time: 0,
+		no_ruined_count: 0,
 		last_arousal: -1
 	};
 
 	const needUpdate = () => {
 		return (
-			diffData.orgasm_count > 0 ||
-			diffData.ruined_count > 0 ||
+			diffData.active_time >= 60_000 ||
 			diffData.edged_time >= 60_000 ||
-			diffData.active_time >= 60_000
+			diffData.orgasm_count > 0 ||
+			diffData.ruined_count > 0
 		);
 	};
 
 	const clearDiffData = () => {
+		diffData.active_time = 0;
+		diffData.edged_time = 0;
 		diffData.orgasm_count = 0;
 		diffData.ruined_count = 0;
-		diffData.edged_time = 0;
-		diffData.active_time = 0;
+		diffData.no_active_time = 0;
+		diffData.no_edged_time = 0;
+		diffData.no_ruined_count = 0;
 	};
 
 	const addDiffData = (data: TrackData) => {
+		data.active_time += diffData.active_time;
+		data.edged_time += diffData.edged_time;
 		data.orgasm_count += diffData.orgasm_count;
 		data.ruined_count += diffData.ruined_count;
-		data.edged_time += diffData.edged_time;
-		data.active_time += diffData.active_time;
+		if (diffData.orgasm_count > 0) {
+			data.no_active_time = diffData.no_active_time;
+			data.no_edged_time = diffData.no_edged_time;
+			data.no_ruined_count = diffData.no_ruined_count;
+		} else {
+			data.no_active_time += diffData.no_active_time;
+			data.no_edged_time += diffData.no_edged_time;
+			data.no_ruined_count += diffData.no_ruined_count;
+		}
 		data.last_arousal = diffData.last_arousal;
 		return data;
 	};
 
 	let lastTrackTime: number = 0;
+	const updateTrackData = (state: RuleState<"other_track_status">, force: boolean) => {
+		if (state.internalData !== undefined) {
+			const change = Math.floor(Date.now() - lastTrackTime);
+			lastTrackTime = Date.now();
+			diffData.active_time += change;
+			diffData.no_active_time += change;
+			if (Player.ArousalSettings) {
+				if (diffData.last_arousal >= 90 && Player.ArousalSettings.Progress >= 90) {
+					diffData.edged_time += change;
+				}
+				diffData.last_arousal = Player.ArousalSettings.Progress;
+			}
+			if (force || needUpdate()) {
+				const newData = cloneDeep(state.internalData);
+				state.internalData = addDiffData(newData);
+				clearDiffData();
+			}
+		}
+	};
+
 	registerRule("other_track_status", {
 		name: "Track status",
 		type: RuleType.Other,
@@ -321,10 +357,13 @@ export function initRules_other() {
 		internalDataValidate: (v) => v !== undefined,
 		internalDataDefault: () => {
 			return {
+				active_time: 0,
+				edged_time: 0,
 				orgasm_count: 0,
 				ruined_count: 0,
-				edged_time: 0,
-				active_time: 0,
+				no_active_time: 0,
+				no_edged_time: 0,
+				no_ruined_count: 0,
 				last_arousal: -1
 			};
 		},
@@ -340,7 +379,8 @@ export function initRules_other() {
 			registerWhisperCommand("hidden", "track", null, (argv, sender, respond) => {
 				const subcommand = (argv[0] || "").toLocaleLowerCase();
 				if (state.inEffect && state.customData && state.internalData !== undefined && getCharacterAccessLevel(sender) <= state.customData.minimumPermittedRole) {
-					let msg = `报告主人，在过去的{active_time}中，小奴隶一共高潮了{orgasm_count}次，被拒绝高潮{ruined_count}次，有{edged_time}处于高潮边缘状态。`;
+					updateTrackData(state, true);
+					let msg = `报告主人，小奴隶已经连续{no_active_time}没有获得高潮了。在过去的{active_time}中，小奴隶一共高潮了{orgasm_count}次，被拒绝高潮{ruined_count}次，有{edged_time}处于高潮边缘状态。`;
 					msg = ReplaceTrackData(msg);
 					if (subcommand === "chat") {
 						ServerSend("ChatRoomChat", { Content: msg, Type: "Chat" });
@@ -356,7 +396,19 @@ export function initRules_other() {
 			hookFunction("ActivityOrgasmStart", 0, (args, next) => {
 				const C = args[0] as Character;
 				if (state.inEffect && C.ID === 0 && (typeof ActivityOrgasmRuined === "undefined" || !ActivityOrgasmRuined)) {
+					const change = Math.floor(Date.now() - lastUpdate);
+					lastTrackTime = Date.now();
+					diffData.active_time += change;
+					if (Player.ArousalSettings) {
+						if (diffData.last_arousal >= 90 && Player.ArousalSettings.Progress >= 90) {
+							diffData.edged_time += change;
+						}
+						diffData.last_arousal = Player.ArousalSettings.Progress;
+					}
 					diffData.orgasm_count += 1;
+					diffData.no_active_time = 0;
+					diffData.no_edged_time = 0;
+					diffData.no_ruined_count = 0;
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
@@ -364,46 +416,23 @@ export function initRules_other() {
 				const C = args[0] as Character;
 				if (state.inEffect && C.ID === 0 && ActivityOrgasmRuined) {
 					diffData.ruined_count += 1;
+					diffData.no_ruined_count += 1;
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
 			lastTrackTime = Date.now();
 		},
 		tick(state) {
-			if (state.inEffect && state.internalData !== undefined) {
-				const change = Math.floor(Date.now() - lastTrackTime);
-				lastTrackTime = Date.now();
-				diffData.active_time += change;
-				if (Player.ArousalSettings) {
-					if (diffData.last_arousal >= 90 && Player.ArousalSettings.Progress >= 90) {
-						diffData.edged_time += change;
-					}
-					diffData.last_arousal = Player.ArousalSettings.Progress;
-				}
-				if (needUpdate()) {
-					const newData = cloneDeep(state.internalData);
-					state.internalData = addDiffData(newData);
-					clearDiffData();
-				}
+			if (state.inEffect) {
+				updateTrackData(state, false);
 			}
 			return false;
 		},
 		stateChange(state, newState) {
 			if (newState) {
 				lastTrackTime = Date.now();
-			} else if (state.internalData !== undefined) {
-				const change = Math.floor(Date.now() - lastUpdate);
-				lastTrackTime = Date.now();
-				diffData.active_time += change;
-				if (Player.ArousalSettings) {
-					if (diffData.last_arousal >= 90 && Player.ArousalSettings.Progress >= 90) {
-						diffData.edged_time += change;
-					}
-					diffData.last_arousal = Player.ArousalSettings.Progress;
-				}
-				const newData = cloneDeep(state.internalData);
-				state.internalData = addDiffData(newData);
-				clearDiffData();
+			} else {
+				updateTrackData(state, true);
 			}
 		}
 	});

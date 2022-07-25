@@ -3,10 +3,13 @@ import { RulesGetRuleState } from "modules/rules";
 import { formatTimeIntervalCN } from "utils";
 
 export type TrackData = {
+	active_time: number;
+	edged_time: number;
 	orgasm_count: number;
 	ruined_count: number;
-	edged_time: number;
-	active_time: number;
+	no_active_time: number;
+	no_edged_time: number;
+	no_ruined_count: number;
 	last_arousal: number;
 };
 
