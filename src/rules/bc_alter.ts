@@ -542,6 +542,24 @@ export function initRules_bc_alter() {
 		}
 	});
 
+	registerRule("alt_horny_level", {
+		name: "Horny level",
+		type: RuleType.Alt,
+		enforceable: false,
+		loggable: false,
+		longDescription: "This rule set the base horny level of PLAYER_NAME, which will affect the arousal events in various ways.",
+		defaultLimit: ConditionsLimit.limited,
+		dataDefinition: {
+			baseHornyLevel: {
+				type: "number",
+				default: 0,
+				description: "Base horny level (>= 0):",
+				Y: 380
+			}
+		}
+		// Implemented in BCE
+	});
+
 	const gaveAdminTo: Set<number> = new Set();
 	registerRule("alt_room_admin_transfer", {
 		name: "Room admin transfer",

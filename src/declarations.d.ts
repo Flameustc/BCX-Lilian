@@ -243,6 +243,7 @@ type BCX_Rule =
 	| "alt_always_slow"
 	| "alt_control_orgasms"
 	| "alt_secret_orgasms"
+	| "alt_horny_level"
 	| "alt_room_admin_transfer"
 	| "alt_room_admin_limit"
 	| "alt_set_profile_description"
@@ -346,6 +347,9 @@ type RuleCustomData = {
 	}
 	alt_control_orgasms: {
 		orgasmHandling: string;
+	},
+	alt_horny_level: {
+		baseHornyLevel: number;
 	},
 	alt_room_admin_transfer: {
 		minimumRole: import("./modules/authority").AccessLevel;
