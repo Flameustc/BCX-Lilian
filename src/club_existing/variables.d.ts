@@ -6,6 +6,7 @@ declare var ActivityOrgasmRuined: boolean;
 declare var ActivityOrgasmGameResistCount: number;
 declare function ActivitySetArousal(C: Character, Progress: number): void;
 declare function ActivityOrgasmPrepare(C: Character, Bypass?: boolean): void;
+declare function ActivityChatRoomArousalSync(C: Character): void;
 
 // AfkTimer.js
 declare var AfkTimerEventsList: string[];

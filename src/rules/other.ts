@@ -8,7 +8,6 @@ import { hookFunction } from "patching";
 import { formatTimeInterval, isObject } from "../utils";
 import { ChatRoomSendLocal } from "../utilsClub";
 import { ReplaceTrackData, TrackData } from "../track";
-import { update } from "lodash-es";
 
 export function initRules_other() {
 	let lastAction = Date.now();
@@ -420,6 +419,11 @@ export function initRules_other() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
+			if (state.inEffect && state.internalData !== undefined && Player.ArousalSettings) {
+				Player.ArousalSettings.OrgasmCount = state.internalData.orgasm_count;
+				Player.ArousalSettings.Progress = state.internalData.last_arousal;
+				ActivityChatRoomArousalSync(Player);
+			}
 			lastTrackTime = Date.now();
 		},
 		tick(state) {
