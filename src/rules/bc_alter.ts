@@ -82,6 +82,7 @@ export function initRules_bc_alter() {
 			}, ModuleCategory.Rules);
 			// depends on the function PreferenceIsPlayerInSensDep()
 			hookFunction("ChatRoomMessage", 9, (args, next) => {
+				const data = args[0] as Record<string, unknown>;
 				const C = args[0].Sender;
 				if (state.isEnforced &&
 					state.customData &&
@@ -91,6 +92,11 @@ export function initRules_bc_alter() {
 						.includes(C)
 				) {
 					ignoreDeaf = true;
+					// Handle garbled whispers
+					const orig = Array.isArray(data.Dictionary) && (data.Dictionary as unknown[]).find((i): i is { Text: string; } => isObject(i) && i.Tag === "BCX_ORIGINAL_MESSAGE" && typeof i.Text === "string");
+					if (orig && state.customData.ignoreGaggedMembersToggle) {
+						data.Content = orig.Text;
+					}
 				}
 				next(args);
 				ignoreDeaf = false;
@@ -452,13 +458,18 @@ export function initRules_bc_alter() {
 		name: "Always leave rooms slowly",
 		type: RuleType.Alt,
 		loggable: false,
-		longDescription: "This rule forces PLAYER_NAME to always leave the room slowly, independent of the items she is wearing. WARNING: Due to limitation in Bondage Club itself, only BCX users will be able to stop PLAYER_NAME from leaving the room.",
+		longDescription: "This rule forces PLAYER_NAME to always leave the room slowly, independent of the items she is wearing. WARNING: Due to limitation in Bondage Club itself, only BCX users will be able to stop PLAYER_NAME from leaving the room. This rule will ignore BC's roleplay difficulty setting 'Cannot be slowed down' and slow down PLAYER_NAME regardless!",
 		defaultLimit: ConditionsLimit.normal,
 		init(state) {
 			registerEffectBuilder(PlayerEffects => {
 				if (state.isEnforced && !PlayerEffects.Effect.includes("Slow")) {
 					PlayerEffects.Effect.push("Slow");
 				}
+			});
+			hookFunction("Player.IsSlow", 2, (args, next) => {
+				if (state.isEnforced)
+					return true;
+				return next(args);
 			});
 		}
 	});

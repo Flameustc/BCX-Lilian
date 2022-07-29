@@ -422,6 +422,14 @@ export class ModuleClubUtils extends BaseModule {
 			if (antiblind) return 0;
 			return next(args);
 		});
+		hookFunction("Player.GetBlurLevel", 9, (args, next) => {
+			if (antiblind) return 0;
+			return next(args);
+		});
+		hookFunction("Player.HasTints", 9, (args, next) => {
+			if (antiblind) return false;
+			return next(args);
+		});
 		//#endregion
 		//#region Hidden room backgrounds
 		registerCommand("utility", "background", "<name> - Changes chat room background", processBackgroundCommand, processBackgroundCommand_autocomplete);
@@ -508,7 +516,6 @@ export class ModuleClubUtils extends BaseModule {
 				if (!item.Property) {
 					item.Property = {};
 				}
-				// @ts-expect-error: The types are too strict, the extra is ignored
 				item.Property.AllowActivityOn = AssetGroup.map(A => A.Name);
 				CharacterRefresh(char.Character);
 				ChatRoomCharacterUpdate(char.Character);
