@@ -5,6 +5,7 @@ import { dictionaryProcess, formatTimeInterval } from "../utils";
 import { ChatRoomActionMessage, ChatRoomSendLocal, InfoBeep } from "../utilsClub";
 import backgroundList from "../generated/backgroundList.json";
 import { RulesGetRuleState } from "../modules/rules";
+import { ForceOrgasm } from "rules/bc_alter";
 
 export function initCommands_definitions() {
 
@@ -612,9 +613,7 @@ export function initCommands_definitions() {
 				return false;
 			}
 			if (argv[0] === "forced") {
-				ActivitySetArousal(Player, 99);
-				ActivityOrgasmGameResistCount = 496.5;
-				ActivityOrgasmPrepare(Player);
+				ForceOrgasm(999);
 				return true;
 			}
 			if (argv[0] === "ruined") {

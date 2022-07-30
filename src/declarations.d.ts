@@ -242,6 +242,7 @@ type BCX_Rule =
 	| "alt_blindfolds_fullblind"
 	| "alt_always_slow"
 	| "alt_control_orgasms"
+	| "alt_control_orgasms_mod"
 	| "alt_secret_orgasms"
 	| "alt_horny_level"
 	| "alt_room_admin_transfer"
@@ -347,6 +348,9 @@ type RuleCustomData = {
 	}
 	alt_control_orgasms: {
 		orgasmHandling: string;
+	},
+	alt_control_orgasms_mod: {
+		orgasmThreshold: number;
 	},
 	alt_horny_level: {
 		baseHornyLevel: number;

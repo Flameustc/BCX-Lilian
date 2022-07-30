@@ -7,6 +7,26 @@ import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { getAllCharactersInRoom, registerEffectBuilder } from "../characters";
 import { isObject } from "../utils";
 import { BCX_setTimeout } from "../BCXContext";
+import { debugPrettifyError } from "errorReporting";
+
+let forcedOrgasm: boolean = false;
+let fixDifficulty: boolean = false;
+export function ForceOrgasm(difficulty?: number) {
+	forcedOrgasm = true;
+	if (difficulty) {
+		fixDifficulty = true;
+		ActivityOrgasmGameDifficulty = difficulty;
+	} else {
+		fixDifficulty = false;
+	}
+	const backup = Player.Effect;
+	Player.Effect = backup.filter((x) => x !== "DenialMode" && x !== "RuinOrgasms");
+	ActivitySetArousal(Player, 99);
+	ActivityOrgasmPrepare(Player);
+	Player.Effect = backup;
+	forcedOrgasm = false;
+	fixDifficulty = false;
+}
 
 export function initRules_bc_alter() {
 	registerRule("alt_restrict_hearing", {
@@ -504,26 +524,105 @@ export function initRules_bc_alter() {
 				}
 				next(args);
 			});
-			hookFunction("ActivityOrgasmPrepare", 5, (args, next) => {
+			hookFunction("ActivityOrgasmPrepare", 4, (args, next) => {
 				const C = args[0] as Character;
 				if (state.isEnforced && state.customData && C.ID === 0) {
-					if (state.customData.orgasmHandling === "edge") {
+					if (state.customData.orgasmHandling === "edge" && !forcedOrgasm) {
 						if (C.ArousalSettings) {
 							C.ArousalSettings.Progress = 95;
 						}
 						return;
-					} else if (state.customData.orgasmHandling === "ruined") {
+					} else if (state.customData.orgasmHandling === "ruined" && !forcedOrgasm) {
 						const backup = Player.Effect;
 						Player.Effect = backup.concat("DenialMode", "RuinOrgasms");
 						next(args);
 						Player.Effect = backup;
 						return;
-					} else if (state.customData.orgasmHandling === "noResist") {
-						ActivityOrgasmGameResistCount = 496.5;
+					} else if (state.customData.orgasmHandling === "noResist" && !fixDifficulty) {
+						ActivityOrgasmGameDifficulty = 999;
 					}
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
+			patchFunction("ActivityOrgasmPrepare", {
+				"if (C.IsEdged()) {": `
+				if (C.ID == 0 && Bypass) ActivityOrgasmRuined = true;
+				if (false) {`
+			});
+		}
+	});
+
+	let desperationLevel: number = 0;
+	let lastDesperationDecay: number = 0;
+	registerRule("alt_control_orgasms_mod", {
+		name: "Control ability to orgasm (Lilian version)",
+		type: RuleType.Alt,
+		enforceable: false,
+		loggable: false,
+		longDescription: "This rule impacts PLAYER_NAME's ability to control their orgasms as an expansion of the vanilla rule. When PLAYER_NAME's orgasm is under control, overflowed pleasure is not wasted but converted into her desperation level of craving for an orgasm. The higher desperation level, the harder to resist the next orgasm (replace vanilla resist counter formula). And an extremely high desperation level could lead to an outbursting orgasm regardless of orgasm control, if her owner so wishes.",
+		defaultLimit: ConditionsLimit.limited,
+		dataDefinition: {
+			orgasmThreshold: {
+				type: "number",
+				default: 0,
+				description: "Minimum desperation level to have an orgasm regardless of orgasm control (0 is impossible):",
+				Y: 380
+			}
+		},
+		load(state) {
+			hookFunction("ActivitySetArousalTimer",	0, (args, next) => {
+				const C = args[0] as Character;
+				const factor = args[3] as number;
+				if (state.inEffect && C.ID === 0 && C.ArousalSettings && factor > 0) {
+					const overflow = factor + C.ArousalSettings.Progress + Math.round(C.ArousalSettings.ProgressTimer / 2) - 100;
+					desperationLevel = Math.max(desperationLevel, overflow + Math.round(desperationLevel / 2));
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			hookFunction("ActivityOrgasmPrepare", 5, (args, next) => {
+				const C = args[0] as Character;
+				if (C.ID === 0) {
+					if (state.inEffect && state.customData && state.customData.orgasmThreshold !== 0 && desperationLevel >= state.customData.orgasmThreshold) {
+						forcedOrgasm = true;
+					}
+					if (!fixDifficulty) {
+						if (state.inEffect) {
+							ActivityOrgasmGameDifficulty = Math.max(6, Math.round(desperationLevel / 2)) * (CommonIsMobile ? 1.5 : 1);
+						} else {
+							ActivityOrgasmGameDifficulty = (6 + (ActivityOrgasmGameResistCount * 2)) * (CommonIsMobile ? 1.5 : 1);
+						}
+					}
+				}
+				next(args);
+				forcedOrgasm = false;
+				return;
+			}, ModuleCategory.Rules);
+			hookFunction("ActivityOrgasmStart", 0, (args, next) => {
+				const C = args[0] as Character;
+				if (state.inEffect && C.ID === 0 && (typeof ActivityOrgasmRuined === "undefined" || !ActivityOrgasmRuined)) {
+					desperationLevel = 0;
+					lastDesperationDecay = Date.now();
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			patchFunction("ActivityOrgasmGameGenerate", {
+				"ActivityOrgasmGameDifficulty = (6 + (ActivityOrgasmGameResistCount * 2)) * (CommonIsMobile ? 1.5 : 1);": ""
+			});
+			lastDesperationDecay = Date.now();
+		},
+		tick(state) {
+			const timestamp = Date.now();
+			if (state.inEffect && timestamp - lastDesperationDecay > 1900) {
+				desperationLevel = Math.max(0, desperationLevel - 2);
+				lastDesperationDecay = timestamp;
+			}
+			return false;
+		},
+		stateChange(state, newState) {
+			if (newState) {
+				desperationLevel = 0;
+				lastDesperationDecay = Date.now();
+			}
 		}
 	});
 

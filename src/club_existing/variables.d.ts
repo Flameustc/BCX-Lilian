@@ -4,6 +4,7 @@
 // Activity.js
 declare var ActivityOrgasmRuined: boolean;
 declare var ActivityOrgasmGameResistCount: number;
+declare var ActivityOrgasmGameDifficulty: number;
 declare function ActivitySetArousal(C: Character, Progress: number): void;
 declare function ActivityOrgasmPrepare(C: Character, Bypass?: boolean): void;
 declare function ActivityChatRoomArousalSync(C: Character): void;
@@ -48,6 +49,7 @@ declare var CurrentModule: any;
 declare var CurrentScreen: string;
 declare var KeyPress: number | string;
 declare var CurrentScreenFunctions: ScreenFunctions;
+declare var CommonIsMobile: boolean;
 declare var MouseX: number;
 declare var MouseY: number;
 declare var GameVersion: string;
