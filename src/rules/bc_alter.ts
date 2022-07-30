@@ -1,5 +1,5 @@
 import { ConditionsLimit, ModuleCategory } from "../constants";
-import { registerRule, RuleType } from "../modules/rules";
+import { registerRule, RuleType, RuleState } from "../modules/rules";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
 import { patchFunction, hookFunction } from "../patching";
 import { ChatRoomActionMessage, getCharacterName, InfoBeep } from "../utilsClub";
@@ -7,7 +7,6 @@ import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { getAllCharactersInRoom, registerEffectBuilder } from "../characters";
 import { isObject } from "../utils";
 import { BCX_setTimeout } from "../BCXContext";
-import { debugPrettifyError } from "errorReporting";
 
 let forcedOrgasm: boolean = false;
 let fixDifficulty: boolean = false;
@@ -608,6 +607,9 @@ export function initRules_bc_alter() {
 			patchFunction("ActivityOrgasmGameGenerate", {
 				"ActivityOrgasmGameDifficulty = (6 + (ActivityOrgasmGameResistCount * 2)) * (CommonIsMobile ? 1.5 : 1);": ""
 			});
+			hookFunction("ActivityFetishFactor", 0, (args, next) => {
+				return Math.min(5, next(args));
+			});
 			lastDesperationDecay = Date.now();
 		},
 		tick(state) {
@@ -652,6 +654,13 @@ export function initRules_bc_alter() {
 		}
 	});
 
+	const getHornyLevel = (state: RuleState<"alt_horny_level">) => {
+		if (state.customData) {
+			return state.customData.baseHornyLevel;
+		}
+		return 0;
+	};
+
 	registerRule("alt_horny_level", {
 		name: "Horny level",
 		type: RuleType.Alt,
@@ -666,8 +675,24 @@ export function initRules_bc_alter() {
 				description: "Base horny level (>= 0):",
 				Y: 380
 			}
+		},
+		load(state) {
+			hookFunction("ActivitySetArousalTimer", 5, (args, next) => {
+				const C = args[0] as Character;
+				const activity = args[1] as Activity;
+				let factor = args[3] as number;
+				if (state.inEffect && state.customData && C.ID === 0) {
+					if (activity && activity.MaxProgress) {
+						const newActivity = { ...activity };
+						newActivity.MaxProgress = Math.min(activity.MaxProgress + getHornyLevel(state) * 10, 100);
+						args[1] = newActivity;
+					}
+					factor += getHornyLevel(state) * 2;
+					args[3] = factor;
+				}
+				return next(args);
+			});
 		}
-		// Implemented in BCE
 	});
 
 	const gaveAdminTo: Set<number> = new Set();
