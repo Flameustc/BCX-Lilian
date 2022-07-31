@@ -699,10 +699,10 @@ export function initRules_bc_alter() {
 				}
 				return next(args);
 			});
-			patchFunction("ChatRoomStimulationMessage", {
-				'if (!Player.IsEdged() && arousal < 70 - event.arousal && event.event != "Talk")': 'if (arousal < 70 - event.arousal + SkillGetLevel(Player, "HornyLevel") * 10 && event.event != "Talk")',
-				"ActivityEffectFlat(Player, Player, event.arousal, event.item.Asset.Group.Name, 1);": 'ActivityEffectFlat(Player, Player, event.arousal + SkillGetLevel(Player, "HornyLevel"), event.item.Asset.Group.Name, 1);'
-			});
+			// Will be available in R83
+			// patchFunction("ChatRoomStimulationMessage", {
+			// 	'if (!Player.IsEdged() && arousal < 70 - event.arousal && event.event != "Talk")': 'if (arousal < 70 - event.arousal + SkillGetLevel(Player, "HornyLevel") * 10 && event.event != "Talk")'
+			// });
 		}
 	});
 
