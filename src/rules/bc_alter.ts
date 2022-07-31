@@ -692,6 +692,17 @@ export function initRules_bc_alter() {
 				}
 				return next(args);
 			});
+			hookFunction("SkillGetLevel", 10, (args, next) => {
+				const SkillType = args[1] as string;
+				if (SkillType === "HornyLevel") {
+					return getHornyLevel(state);
+				}
+				return next(args);
+			});
+			patchFunction("ChatRoomStimulationMessage", {
+				'if (!Player.IsEdged() && arousal < 70 - event.arousal && event.event != "Talk")': 'if (arousal < 70 - event.arousal + SkillGetLevel(Player, "HornyLevel") * 10 && event.event != "Talk")',
+				"ActivityEffectFlat(Player, Player, event.arousal, event.item.Asset.Group.Name, 1);": 'ActivityEffectFlat(Player, Player, event.arousal + SkillGetLevel(Player, "HornyLevel"), event.item.Asset.Group.Name, 1);'
+			});
 		}
 	});
 
