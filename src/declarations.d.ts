@@ -310,6 +310,7 @@ type BCX_Rule =
 	| "setting_room_rejoin"
 	| "setting_plug_vibe_events"
 	| "setting_upsidedown_view"
+	| "setting_limited_items"
 	;
 
 type RuleCustomData = {
@@ -526,6 +527,10 @@ type RuleCustomData = {
 	setting_upsidedown_view: {
 		value: boolean;
 		restore: boolean;
+	},
+	setting_limited_items: {
+		minimumRole: import("./modules/authority").AccessLevel;
+		limitedItems: string[];
 	}
 };
 

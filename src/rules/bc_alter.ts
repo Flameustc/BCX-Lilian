@@ -586,7 +586,7 @@ export function initRules_bc_alter() {
 					}
 					if (!fixDifficulty) {
 						if (state.inEffect) {
-							ActivityOrgasmGameDifficulty = Math.max(6, Math.round(desperationLevel / 2)) * (CommonIsMobile ? 1.5 : 1);
+							ActivityOrgasmGameDifficulty = Math.round(Math.max(6, desperationLevel / 2) * (CommonIsMobile ? 1.5 : 1));
 						} else {
 							ActivityOrgasmGameDifficulty = (6 + (ActivityOrgasmGameResistCount * 2)) * (CommonIsMobile ? 1.5 : 1);
 						}

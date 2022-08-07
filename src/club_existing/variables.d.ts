@@ -216,6 +216,7 @@ declare function InventoryGetLock(Item: Item): Item | null;
 declare function InventoryRemove(C: Character, AssetGroup: string, Refresh?: boolean): void;
 declare function InventoryItemHasEffect(Item: Item, Effect?: string, CheckProperties?: boolean): boolean;
 declare function InventoryIsPermissionBlocked(C: Character, AssetName: string, AssetGroup: string, AssetType?: string): boolean;
+declare function InventoryIsFavorite(C: Character, AssetName: string, AssetGroup: string, AssetType: string): boolean;
 
 // GameLog.js
 declare function LogAdd(NewLogName: string, NewLogGroup: string, NewLogValue: number, Push: boolean): void;

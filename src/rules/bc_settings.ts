@@ -1,5 +1,9 @@
 import { ConditionsLimit } from "../constants";
+import { AccessLevel, getCharacterAccessLevel } from "modules/authority";
 import { registerRule, RuleType } from "../modules/rules";
+import { hookFunction } from "patching";
+import { dictionaryProcess } from "utils";
+import { ChatRoomActionMessage, InfoBeep } from "utilsClub";
 
 export function initRules_bc_settings() {
 
@@ -440,5 +444,107 @@ export function initRules_bc_settings() {
 		defaultLimit: ConditionsLimit.blocked,
 		get: () => Player.GraphicsSettings?.InvertRoom,
 		set: value => Player.GraphicsSettings!.InvertRoom = value
+	});
+
+	function getItemKey(item: Item) {
+		return getItemKey2(item.Asset.Group.Name, item.Asset.Name);
+	}
+
+	function getItemKey2(groupName: string, itemName: string) {
+		return groupName + "." + itemName;
+	}
+
+	let lastChatRoomActionMessage: string = "";
+	registerRule("setting_limited_items", {
+		name: "Allow limited items",
+		type: RuleType.Setting,
+		enforceable: false,
+		loggable: false,
+		longDescription: "This rule allows PLAYER_NAME to set an item's permission to limited regardless of BC settings and difficulty. Limited items will be automatically removed if worn by someone doesn't meet minimum role",
+		defaultLimit: ConditionsLimit.limited,
+		dataDefinition: {
+			minimumRole: {
+				type: "roleSelector",
+				default: AccessLevel.whitelist,
+				description: "Minimum role allowed to use limited items:",
+				Y: 715
+			},
+			limitedItems: {
+				type: "stringList",
+				default: [],
+				description: "Limited items:",
+				Y: 296
+			}
+		},
+		load(state) {
+			hookFunction("InventoryTogglePermission", 5, (args, next) => {
+				const item = args[0] as Item;
+				const type = args[1] as string;
+				const itemKey = getItemKey(item);
+				if (state.inEffect && state.customData) {
+					if (InventoryIsFavorite(Player, item.Asset.Name, item.Asset.Group.Name, type)) {
+						const idx = state.customData.limitedItems.findIndex((x) => x === itemKey);
+						if (idx >= 0) {
+							InfoBeep(`Removed ${itemKey} from limited items.`);
+							state.customData.limitedItems.splice(idx, 1);
+						} else {
+							InfoBeep(`Added ${itemKey} to limited items.`);
+							state.customData.limitedItems.push(itemKey);
+							state.customData.limitedItems.sort();
+						}
+					}
+				}
+				return next(args);
+			});
+			hookFunction("AppearanceGetPreviewImageColor", 5, (args, next) => {
+				const C = args[0] as Character;
+				const item = args[1] as Item;
+				const hover = args[2] as boolean;
+				const itemKey = getItemKey(item);
+				if (state.inEffect && state.customData && DialogItemPermissionMode && C.ID === 0) {
+					if (state.customData.limitedItems.includes(itemKey)) {
+						return hover ? "#5F265C" : "#C04EB9";
+					}
+				}
+				return next(args);
+			});
+			hookFunction("ValidationResolveAddDiff", 5, (args, next) => {
+				const newItem = args[0] as Item;
+				const params = args[1] as AppearanceUpdateParameters;
+				const itemKey = getItemKey(newItem);
+				if (state.inEffect && state.customData && params.C.ID === 0) {
+					if (state.customData.limitedItems.includes(itemKey) && getCharacterAccessLevel(params.sourceMemberNumber) > state.customData.minimumRole) {
+						const msg = dictionaryProcess("PLAYER_NAME's body seems to be protected and the ASSET_NAME just falls off her body.", { ASSET_NAME: newItem.Asset.Name });
+						if (msg !== lastChatRoomActionMessage) {
+							ChatRoomActionMessage(msg);
+							lastChatRoomActionMessage = msg;
+						}
+						return { item: null, valid: false };
+					}
+				}
+				return next(args);
+			});
+			hookFunction("ValidationResolveModifyDiff", 5, (args, next) => {
+				const previousItem = args[0] as Item;
+				const newItem = args[1] as Item;
+				const params = args[2] as AppearanceUpdateParameters;
+				const itemKey = getItemKey(newItem);
+				if (state.inEffect && state.customData && params.C.ID === 0) {
+					if (state.customData.limitedItems.includes(itemKey) && getCharacterAccessLevel(params.sourceMemberNumber) > state.customData.minimumRole) {
+						const msg = dictionaryProcess("PLAYER_NAME's body seems to be protected and all changes to ASSET_NAME are restored.", { ASSET_NAME: previousItem.Asset.Name });
+						if (msg !== lastChatRoomActionMessage) {
+							ChatRoomActionMessage(msg);
+							lastChatRoomActionMessage = msg;
+						}
+						return { item: previousItem, valid: false };
+					}
+				}
+				return next(args);
+			});
+		},
+		tick(state) {
+			lastChatRoomActionMessage = "";
+			return false;
+		}
 	});
 }
