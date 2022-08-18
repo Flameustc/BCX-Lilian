@@ -245,6 +245,7 @@ declare function ValidationCreateDiffParams(C: Character, sourceMemberNumber: nu
 declare function ValidationCanRemoveItem(previousItem: Item, params: AppearanceUpdateParameters, isSwap: boolean): boolean;
 declare function ValidationCanAddItem(newItem: Item, params: AppearanceUpdateParameters): boolean;
 declare function ValidationIsItemBlockedOrLimited(C: Character, sourceMemberNumber: any, groupName: string, assetName: string, type?: string | null): boolean;
+declare function ValidationCopyProperty(sourceProperty: any, targetProperty: any, key: string): boolean;
 
 // Text.js
 declare function TextGet(TextTag: string): string;

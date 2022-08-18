@@ -9,6 +9,12 @@ import { formatTimeInterval, isObject } from "../utils";
 import { ChatRoomSendLocal } from "../utilsClub";
 import { ReplaceTrackData, TrackData } from "../track";
 
+export type TimerData = {
+	asset_name: string;
+	group_name: string;
+	remove_timer: number;
+};
+
 export function initRules_other() {
 	let lastAction = Date.now();
 	let afkDidTrigger = false;
@@ -379,7 +385,12 @@ export function initRules_other() {
 				const subcommand = (argv[0] || "").toLocaleLowerCase();
 				if (state.inEffect && state.customData && state.internalData !== undefined && getCharacterAccessLevel(sender) <= state.customData.minimumPermittedRole) {
 					updateTrackData(state, true);
-					let msg = `报告主人，小奴隶已经连续{no_active_time}没有获得高潮了。在过去的{active_time}中，小奴隶一共高潮了{orgasm_count}次，被拒绝高潮{ruined_count}次，有{edged_time}处于高潮边缘状态。`;
+					let msg = "";
+					if (Player.IsOwnedByMemberNumber(sender.MemberNumber)) {
+						msg = `报告主人，小奴隶已经连续{no_active_time}没有获得高潮了。在过去的{active_time}中，小奴隶一共高潮了{orgasm_count}次，被拒绝高潮{ruined_count}次，有{edged_time}处于高潮边缘状态。`;
+					} else {
+						msg = `报告姐姐，${Player.Nickname ?? Player.Name}已经连续{no_active_time}没有获得高潮了。在过去的{active_time}中，${Player.Nickname ?? Player.Name}一共高潮了{orgasm_count}次，被拒绝高潮{ruined_count}次，有{edged_time}处于高潮边缘状态。`;
+					}
 					msg = ReplaceTrackData(msg);
 					if (subcommand === "chat") {
 						ServerSend("ChatRoomChat", { Content: msg, Type: "Chat" });
@@ -437,6 +448,110 @@ export function initRules_other() {
 				lastTrackTime = Date.now();
 			} else {
 				updateTrackData(state, true);
+			}
+		}
+	});
+
+	let lastTimerUpdate: number = 0;
+	registerRule("other_timer_lock", {
+		name: "Advanced timer lock",
+		type: RuleType.Other,
+		enforceable: false,
+		loggable: false,
+		longDescription: "This rule changes default behavior of all timer locks on PLAYER_NAME.",
+		internalDataValidate: (v) => v !== undefined,
+		internalDataDefault: () => [],
+		defaultLimit: ConditionsLimit.blocked,
+		dataDefinition: {
+			minimumPermittedRole: {
+				type: "roleSelector",
+				default: AccessLevel.public,
+				description: "Minimum role able to modify remaining time:"
+			}
+		},
+		load(state) {
+			hookFunction("TimerInventoryRemove", 5, (args, next) => {
+				if (state.condition && state.condition.active && state.internalData !== undefined) {
+					const internalData = state.internalData;
+					let changed = false;
+					for (let i = internalData.length - 1; i >= 0; i--) {
+						const item = InventoryGet(Player, internalData[i].group_name);
+						if (item && item.Asset.Name === internalData[i].asset_name && item.Property && typeof item.Property.RemoveTimer === "number") {
+							let timer = internalData[i].remove_timer;
+							const lock = InventoryGetLock(item);
+							if (lock) {
+								timer = Math.min(timer, lock.Asset.MaxTimer * 1000);
+							}
+							item.Property.RemoveTimer = Math.round(CurrentTime + timer);
+						} else {
+							internalData.splice(i, 1);
+							changed = true;
+						}
+					}
+					for (const item of Player.Appearance) {
+						if (item.Property && typeof item.Property.RemoveTimer === "number" && !internalData.some((x) => x.group_name === item.Asset.Group.Name)) {
+							internalData.push({
+								asset_name: item.Asset.Name,
+								group_name: item.Asset.Group.Name,
+								remove_timer: item.Property.RemoveTimer - CurrentTime
+							});
+							changed = true;
+						}
+					}
+					if (changed) {
+						state.internalData = internalData;
+					}
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			hookFunction("ValidationResolveLockModification", 1, (args, next) => {
+				const previousItem = args[0] as Item;
+				const newItem = args[1] as Item;
+				const params = args[2] as AppearanceUpdateParameters;
+				const previousProperty = previousItem.Property || {};
+				const newProperty = newItem.Property = newItem.Property || {};
+				if (state.condition && state.condition.active && state.customData && state.internalData !== undefined && typeof newProperty.RemoveTimer === "number" && previousProperty.RemoveTimer !== newProperty.RemoveTimer) {
+					if (getCharacterAccessLevel(params.sourceMemberNumber) > state.customData.minimumPermittedRole) {
+						ValidationCopyProperty(previousProperty, newProperty, "RemoveTimer");
+						next(args);
+						return false;
+					}
+					const internalData = state.internalData;
+					const idx = internalData.findIndex((x) => x.group_name === newItem.Asset.Group.Name);
+					if (idx >= 0) {
+						internalData[idx].remove_timer = newProperty.RemoveTimer - CurrentTime;
+					} else {
+						internalData.push({
+							asset_name: newItem.Asset.Name,
+							group_name: newItem.Asset.Group.Name,
+							remove_timer: newProperty.RemoveTimer - CurrentTime
+						});
+					}
+					state.internalData = internalData;
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			lastTimerUpdate = Date.now();
+		},
+		tick(state) {
+			if (state.inEffect && state.internalData !== undefined) {
+				const change = Math.floor(Date.now() - lastTimerUpdate);
+				const internalData = state.internalData;
+				internalData.forEach((x) => x.remove_timer -= change);
+				state.internalData = internalData;
+				lastTimerUpdate = Date.now();
+			}
+			return false;
+		},
+		stateChange(state, newState) {
+			if (newState) {
+				lastTimerUpdate = Date.now();
+			} else if (state.internalData !== undefined) {
+				const change = Math.floor(Date.now() - lastTimerUpdate);
+				const internalData = state.internalData;
+				internalData.forEach((x) => x.remove_timer -= change);
+				state.internalData = internalData;
+				lastTimerUpdate = Date.now();
 			}
 		}
 	});
