@@ -7,6 +7,7 @@ import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { getAllCharactersInRoom, registerEffectBuilder } from "../characters";
 import { isObject } from "../utils";
 import { BCX_setTimeout } from "../BCXContext";
+import { lastArousalData } from "./other";
 
 let forcedOrgasm: boolean = false;
 let fixDifficulty: boolean = false;
@@ -566,15 +567,56 @@ export function initRules_bc_alter() {
 				default: 0,
 				description: "Minimum desperation level to have an orgasm regardless of orgasm control (0 is impossible):",
 				Y: 380
+			},
+			allowSelfOrgasm: {
+				type: "toggle",
+				default: true,
+				description: "Player can trigger an orgasm by herself"
 			}
 		},
 		load(state) {
+			hookFunction("ActivityEffectFlat", 10, (args, next) => {
+				if (state.inEffect) {
+					args[0] = lastArousalData.source || args[0];
+					args[1] = lastArousalData.target || args[1];
+					args[3] = lastArousalData.zone || args[3];
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			hookFunction("ActivityEffect", 10, (args, next) => {
+				if (state.inEffect) {
+					args[0] = lastArousalData.source || args[0];
+					args[1] = lastArousalData.target || args[1];
+					args[2] = lastArousalData.activity || args[2];
+					args[3] = lastArousalData.zone || args[3];
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			hookFunction("ActivityRunSelf", 10, (args, next) => {
+				if (state.inEffect) {
+					args[0] = lastArousalData.source || args[0];
+					args[1] = lastArousalData.target || args[1];
+					args[2] = lastArousalData.activity || args[2];
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
 			hookFunction("ActivitySetArousalTimer",	0, (args, next) => {
 				const C = args[0] as Character;
+				const zone = args[1] as string;
 				const factor = args[3] as number;
 				if (state.inEffect && C.ID === 0 && C.ArousalSettings && factor > 0) {
 					const overflow = factor + C.ArousalSettings.Progress + Math.round(C.ArousalSettings.ProgressTimer / 2) - 100;
 					desperationLevel = Math.max(desperationLevel, overflow + Math.round(desperationLevel / 2));
+				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			hookFunction("PreferenceGetZoneOrgasm", 0, (args, next) => {
+				const C = args[0] as Character;
+				const zone = args[1] as string;
+				if (state.inEffect && state.customData && C.ID === 0 && PreferenceSubscreen === "") {
+					if (!state.customData.allowSelfOrgasm && lastArousalData.source && lastArousalData.source.ID === 0) {
+						return false;
+					}
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
@@ -699,10 +741,9 @@ export function initRules_bc_alter() {
 				}
 				return next(args);
 			});
-			// Will be available in R83
-			// patchFunction("ChatRoomStimulationMessage", {
-			// 	'if (!Player.IsEdged() && arousal < 70 - event.arousal && event.event != "Talk")': 'if (arousal < 70 - event.arousal + SkillGetLevel(Player, "HornyLevel") * 10 && event.event != "Talk")'
-			// });
+			patchFunction("ChatRoomStimulationMessage", {
+				'if (!Player.IsEdged() && arousal < 70 - event.arousal && event.event != "Talk")': 'if (arousal < 70 - event.arousal + SkillGetLevel(Player, "HornyLevel") * 10 && event.event != "Talk")'
+			});
 		}
 	});
 

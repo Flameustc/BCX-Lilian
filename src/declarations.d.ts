@@ -353,6 +353,7 @@ type RuleCustomData = {
 	},
 	alt_control_orgasms_mod: {
 		orgasmThreshold: number;
+		allowSelfOrgasm: boolean;
 	},
 	alt_horny_level: {
 		baseHornyLevel: number;

@@ -5,9 +5,12 @@
 declare var ActivityOrgasmRuined: boolean;
 declare var ActivityOrgasmGameResistCount: number;
 declare var ActivityOrgasmGameDifficulty: number;
+declare var ActivityDictionary: string[][];
 declare function ActivitySetArousal(C: Character, Progress: number): void;
 declare function ActivityOrgasmPrepare(C: Character, Bypass?: boolean): void;
 declare function ActivityChatRoomArousalSync(C: Character): void;
+declare function ActivityRunSelf(Source: Character, Target: Character, Activity: Activity): void;
+declare function ActivityEffect(S: Character, C: Character, A: Activity | string, Z?: string, Count?: number): void;
 
 // AfkTimer.js
 declare var AfkTimerEventsList: string[];
@@ -203,6 +206,7 @@ declare var AssetGroup: AssetGroup[];
 declare function AssetLoadDescription(Family: string): void;
 declare function AssetGet(Family: string, Group: string, Name: string): Asset | null;
 declare function AssetGroupGet(Family: string, Group: string): AssetGroup | null;
+declare function AssetGetActivity(Family: string, Name: string): Activity | undefined;
 
 // Wardrobe.js
 declare function WardrobeAssetBundle(A: Item): ItemBundle;
@@ -217,6 +221,9 @@ declare function InventoryRemove(C: Character, AssetGroup: string, Refresh?: boo
 declare function InventoryItemHasEffect(Item: Item, Effect?: string, CheckProperties?: boolean): boolean;
 declare function InventoryIsPermissionBlocked(C: Character, AssetName: string, AssetGroup: string, AssetType?: string): boolean;
 declare function InventoryIsFavorite(C: Character, AssetName: string, AssetGroup: string, AssetType: string): boolean;
+
+// SpankingToy.js
+declare function InventorySpankingToysGetType(C: Character): string;
 
 // GameLog.js
 declare function LogAdd(NewLogName: string, NewLogGroup: string, NewLogValue: number, Push: boolean): void;
@@ -234,6 +241,8 @@ declare function MouseXIn(Left: number, Width: number): boolean;
 // Preference.js
 declare var PreferenceDifficultyLevel: any;
 declare var PreferenceDifficultyAccept: boolean;
+declare var PreferenceSubscreen: string;
+declare function PreferenceArousalAtLeast(C: Character, Level: string): boolean;
 
 // Login.js
 declare function LoginMistressItems(): void;
