@@ -571,7 +571,14 @@ export function initRules_bc_alter() {
 			allowSelfOrgasm: {
 				type: "toggle",
 				default: true,
-				description: "Player can trigger an orgasm by herself"
+				description: "Player can trigger an orgasm by herself",
+				Y: 480
+			},
+			allowSelfForcedOrgasm: {
+				type: "toggle",
+				default: false,
+				description: "Player can trigger a forced orgasm by herself",
+				Y: 580
 			}
 		},
 		load(state) {
@@ -602,7 +609,8 @@ export function initRules_bc_alter() {
 			}, ModuleCategory.Rules);
 			hookFunction("ActivitySetArousalTimer",	0, (args, next) => {
 				const C = args[0] as Character;
-				const zone = args[1] as string;
+				const activity = args[1] as Activity;
+				const zone = args[2] as string;
 				const factor = args[3] as number;
 				if (state.inEffect && C.ID === 0 && C.ArousalSettings && factor > 0) {
 					const overflow = factor + C.ArousalSettings.Progress + Math.round(C.ArousalSettings.ProgressTimer / 2) - 100;
@@ -623,7 +631,7 @@ export function initRules_bc_alter() {
 			hookFunction("ActivityOrgasmPrepare", 5, (args, next) => {
 				const C = args[0] as Character;
 				if (C.ID === 0) {
-					if (state.inEffect && state.customData && state.customData.orgasmThreshold !== 0 && desperationLevel >= state.customData.orgasmThreshold) {
+					if (state.inEffect && state.customData && state.customData.orgasmThreshold !== 0 && desperationLevel >= state.customData.orgasmThreshold && (state.customData.allowSelfForcedOrgasm || lastArousalData.source?.ID !== 0)) {
 						forcedOrgasm = true;
 					}
 					if (!fixDifficulty) {

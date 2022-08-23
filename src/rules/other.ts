@@ -601,7 +601,7 @@ export function initRules_other() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-			// Override vanilla function to truely support DynamicActivity
+			// Record used item, associated acitivity, and targeted zone when items are used to other characters
 			hookFunction("ActivityArousalItem", 11, (args, next) => {
 				const source = args[0] as Character;
 				const target = args[1] as Character;
@@ -621,6 +621,13 @@ export function initRules_other() {
 				} else {
 					lastArousalData.item = asset.DynamicName(source) || asset.Name;
 				}
+				return next(args);
+			}, ModuleCategory.Rules);
+			// Override vanilla function to support DynamicActivity
+			hookFunction("ActivityArousalItem", 0, (args, next) => {
+				const source = args[0] as Character;
+				const target = args[1] as Character;
+				console.log(`ActivityArousalItem ${typeof lastArousalData.activity === "string" ? lastArousalData.activity : lastArousalData.activity?.Name}`);
 				// Re-implement original logic
 				if (typeof lastArousalData.activity === "object") {
 					if (source.ID === 0 && target.ID !== 0) ActivityRunSelf(source, target, lastArousalData.activity);
@@ -649,6 +656,18 @@ export function initRules_other() {
 					lastArousalData.activity = activity;
 				}
 				return next(args);
+			}, ModuleCategory.Rules);
+			// Override vanilla function to use new arousal zone
+			hookFunction("ActivityRunSelf", 0, (args, next) => {
+				const source = args[0] as Character;
+				const target = args[1] as Character;
+				const activity = args[2] as Activity;
+				if (((Player.ArousalSettings?.Active === "Hybrid") || (Player.ArousalSettings?.Active === "Automatic")) && (source.ID === 0) && (target.ID !== 0)) {
+					let factor = (PreferenceGetActivityFactor(Player, activity.Name, false) * 5) - 10;
+					factor += Math.floor((Math.random() * 8));
+					if (target.IsLoverOfPlayer()) factor += Math.floor((Math.random() * 8));
+					ActivitySetArousalTimer(Player, activity, lastArousalData.zone || "undefined", factor);
+				}
 			}, ModuleCategory.Rules);
 		},
 		load(state) {

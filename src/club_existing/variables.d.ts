@@ -11,6 +11,7 @@ declare function ActivityOrgasmPrepare(C: Character, Bypass?: boolean): void;
 declare function ActivityChatRoomArousalSync(C: Character): void;
 declare function ActivityRunSelf(Source: Character, Target: Character, Activity: Activity): void;
 declare function ActivityEffect(S: Character, C: Character, A: Activity | string, Z?: string, Count?: number): void;
+declare function ActivitySetArousalTimer(C: Character, Activity: Activity, Zone: string, Progress: number): void;
 
 // AfkTimer.js
 declare var AfkTimerEventsList: string[];
@@ -243,6 +244,7 @@ declare var PreferenceDifficultyLevel: any;
 declare var PreferenceDifficultyAccept: boolean;
 declare var PreferenceSubscreen: string;
 declare function PreferenceArousalAtLeast(C: Character, Level: string): boolean;
+declare function PreferenceGetActivityFactor(C: Character, Type: string, Self: boolean): number;
 
 // Login.js
 declare function LoginMistressItems(): void;
