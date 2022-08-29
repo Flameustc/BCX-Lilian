@@ -49,5 +49,5 @@ registerModule(new ModuleRelationhips());
 registerModule(new ModuleRules());
 registerModule(new ModuleSpeech());
 registerModule(new ModuleStorage());
-registerModule(new ModuleVersionCheck());
+// registerModule(new ModuleVersionCheck());
 registerModule(new ModuleWardrobe());
