@@ -16,6 +16,7 @@ type CommandListItem = {
 
 const PER_PAGE_COUNT = 6;
 
+let alphabeticalSort: boolean = false;
 let availabilitySort: boolean = false;
 
 export class GuiCommandsModule extends GuiSubscreen {
@@ -52,17 +53,18 @@ export class GuiCommandsModule extends GuiSubscreen {
 	}
 
 	private requestData() {
-		this.commandsData = null;
-		this.rebuildList();
 		this.character.conditionsGetByCategory("commands").then(res => {
 			this.commandsData = res;
 			if (!this.commandsData.access_changeLimits) {
 				this.permissionMode = false;
 			}
+			this.failed = false;
 			this.rebuildList();
 		}, err => {
 			console.error(`BCX: Failed to get commands info for ${this.character}`, err);
+			this.commandsData = null;
 			this.failed = true;
+			this.rebuildList();
 		});
 	}
 
@@ -94,6 +96,9 @@ export class GuiCommandsModule extends GuiSubscreen {
 		}
 
 		const data = this.commandsData;
+		if (alphabeticalSort) {
+			this.commandList.sort((a, b) => a.definition.name.localeCompare(b.definition.name));
+		}
 		if (availabilitySort) {
 			this.commandList.sort((a, b) => (
 				(
@@ -119,7 +124,7 @@ export class GuiCommandsModule extends GuiSubscreen {
 		MainCanvas.textAlign = "left";
 		DrawText(`- Commands: List all commands for ${this.character.Name} -`, 125, 125, "Black", "Gray");
 		MainCanvas.textAlign = "center";
-		DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png", "Back");
+		DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png", "BCX main menu");
 		DrawButton(1815, 190, 90, 90, "", "White", "Icons/Question.png");
 
 		if (this.commandsData === null) {
@@ -150,6 +155,10 @@ export class GuiCommandsModule extends GuiSubscreen {
 		// sort toggle
 		DrawButton(1483, 182, 64, 64, "", "White", undefined, "Toggle availability-based sorting");
 		DrawImageEx("Icons/LockMenu.png", 1483 + 3, 182 + 3, { Alpha: availabilitySort ? 1 : 0.2, Width: 58, Height: 58 });
+
+		// A-Z toggle
+		DrawButton(1583, 182, 64, 64, "", "white", undefined, "Toggle alphabetical sorting");
+		DrawTextFit("A-Z", 1583 + 32, 182 + 32 + 1, 64 - 4, alphabeticalSort ? "black" : "#bbb");
 
 		// Actual commands
 		MainCanvas.textAlign = "left";
@@ -239,6 +248,12 @@ export class GuiCommandsModule extends GuiSubscreen {
 		// sort toggle
 		if (MouseIn(1483, 182, 64, 64)) {
 			availabilitySort = !availabilitySort;
+			this.rebuildList();
+		}
+
+		// A-Z toggle
+		if (MouseIn(1583, 182, 64, 64)) {
+			alphabeticalSort = !alphabeticalSort;
 			this.rebuildList();
 		}
 

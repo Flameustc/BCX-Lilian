@@ -5,11 +5,13 @@ import { ChatroomCharacter, getAllCharactersInRoom, getPlayerCharacter } from ".
 import { modStorage, modStorageSync } from "./storage";
 import { notifyOfChange, queryHandlers } from "./messaging";
 import { LogEntryType, logMessage } from "./log";
-import { ChatRoomActionMessage, ChatRoomSendLocal, getCharacterName } from "../utilsClub";
+import { ChatRoomActionMessage, ChatRoomSendLocal, getCharacterName, getCharacterNickname } from "../utilsClub";
 import { moduleIsEnabled } from "./presets";
 import { RulesGetRuleState } from "./rules";
 import { ModuleCategory, ModuleInitPhase, MODULE_NAMES, Preset } from "../constants";
 import { Command_fixExclamationMark, COMMAND_GENERIC_ERROR, Command_selectCharacterAutocomplete, Command_selectCharacterMemberNumber, registerWhisperCommand } from "./commands";
+import { ExportImportRegisterCategory } from "./export_import";
+import zod from "zod";
 
 export enum AccessLevel {
 	self = 0,
@@ -140,7 +142,7 @@ export function getPermissionDataFromBundle(bundle: PermissionsBundle): Permissi
 	return res;
 }
 
-export function setPermissionSelfAccess(permission: BCX_Permissions, self: boolean, characterToCheck: ChatroomCharacter | null): boolean {
+export function setPermissionSelfAccess(permission: BCX_Permissions, self: boolean, characterToCheck: ChatroomCharacter | null, forceAllow: boolean = false): boolean {
 	const permData = permissions.get(permission);
 	if (!permData) {
 		throw new Error(`Attempt to edit unknown permission "${permission}"`);
@@ -153,22 +155,29 @@ export function setPermissionSelfAccess(permission: BCX_Permissions, self: boole
 
 	if (permData.self === self) return true;
 
-	if (characterToCheck) {
-		if (!checkPermissionAccess(self ? "authority_grant_self" : "authority_revoke_self", characterToCheck) ||
-			!characterToCheck.isPlayer() && !checkPermissionAccess(permission, characterToCheck)
-		) {
+	if (characterToCheck && !forceAllow) {
+		const allowed = checkPermissionAccess(self ? "authority_grant_self" : "authority_revoke_self", characterToCheck) &&
+			(
+				characterToCheck.isPlayer() ||
+				checkPermissionAccess(permission, characterToCheck)
+			);
+		if (!allowed) {
 			console.warn(`BCX: Unauthorized self permission edit attempt for "${permission}" by ${characterToCheck}`);
 			return false;
 		}
 	}
 
 	if (characterToCheck) {
-		const msg = `${characterToCheck} ` +
+		logMessage("permission_change", LogEntryType.plaintext, `${characterToCheck} ` +
 			(self ? `gave ${characterToCheck.isPlayer() ? "herself" : Player.Name}` : `removed ${characterToCheck?.isPlayer() ? "her" : Player.Name + "'s"}`) +
-			` control over permission "${permData.name}"`;
-		logMessage("permission_change", LogEntryType.plaintext, msg);
+			` control over permission "${permData.name}"`);
 		if (!characterToCheck.isPlayer()) {
-			ChatRoomSendLocal(msg, undefined, characterToCheck.MemberNumber);
+			ChatRoomSendLocal(
+				`${characterToCheck.toNicknamedString()} ` +
+				(self ? `gave ${characterToCheck.isPlayer() ? "herself" : getPlayerCharacter().Nickname}` : `removed ${characterToCheck?.isPlayer() ? "her" : getPlayerCharacter().Nickname + "'s"}`) +
+				` control over permission "${permData.name}"`,
+				undefined, characterToCheck.MemberNumber
+			);
 		}
 	}
 
@@ -179,7 +188,7 @@ export function setPermissionSelfAccess(permission: BCX_Permissions, self: boole
 	return true;
 }
 
-export function setPermissionMinAccess(permission: BCX_Permissions, min: AccessLevel, characterToCheck: ChatroomCharacter | null): boolean {
+export function setPermissionMinAccess(permission: BCX_Permissions, min: AccessLevel, characterToCheck: ChatroomCharacter | null, forceAllow: boolean = false): boolean {
 	const permData = permissions.get(permission);
 	if (!permData) {
 		throw new Error(`Attempt to edit unknown permission "${permission}"`);
@@ -190,22 +199,18 @@ export function setPermissionMinAccess(permission: BCX_Permissions, min: AccessL
 
 	if (permData.min === min) return true;
 
-	if (characterToCheck) {
+	if (characterToCheck && !forceAllow) {
 		const allowed =
 			// Exception: Player can always lower permissions "Self"->"Owner"
 			(characterToCheck.isPlayer() && permData.min < min && min <= AccessLevel.owner) ||
 			(
 				// Character must have access to "allow lowest access modification"
 				checkPermissionAccess("authority_edit_min", characterToCheck) &&
-				(
-					// Character must have access to target rule
-					checkPermissionAccess(permission, characterToCheck) ||
-					// Exception: Player bypasses this check when lowering "lowest access"
-					characterToCheck.isPlayer() && min >= permData.min
-				) &&
+				// Character must have access to target rule
+				checkPermissionAccess(permission, characterToCheck) &&
 				(
 					// Not player must have access to target level
-					!characterToCheck.isPlayer() ||
+					characterToCheck.isPlayer() ||
 					getCharacterAccessLevel(characterToCheck) <= min
 				)
 			);
@@ -216,11 +221,14 @@ export function setPermissionMinAccess(permission: BCX_Permissions, min: AccessL
 	}
 
 	if (characterToCheck) {
-		const msg = `${characterToCheck} changed permission "${permData.name}" from ` +
-			`"${getPermissionMinDisplayText(permData.min, characterToCheck)}" to "${getPermissionMinDisplayText(min, characterToCheck)}"`;
-		logMessage("permission_change", LogEntryType.plaintext, msg);
+		logMessage("permission_change", LogEntryType.plaintext, `${characterToCheck} changed permission "${permData.name}" from ` +
+			`"${getPermissionMinDisplayText(permData.min, characterToCheck)}" to "${getPermissionMinDisplayText(min, characterToCheck)}"`);
 		if (!characterToCheck.isPlayer()) {
-			ChatRoomSendLocal(msg, undefined, characterToCheck.MemberNumber);
+			ChatRoomSendLocal(
+				`${characterToCheck.toNicknamedString()} changed permission "${permData.name}" from ` +
+				`"${getPermissionMinDisplayText(permData.min, characterToCheck)}" to "${getPermissionMinDisplayText(min, characterToCheck)}"`,
+				undefined, characterToCheck.MemberNumber
+			);
 		}
 	}
 
@@ -318,17 +326,26 @@ export function editRole(role: "owner" | "mistress", action: "add" | "remove", t
 	}
 
 	if (character) {
-		const targetDescriptor = character.MemberNumber === target ? "herself" : `${getCharacterName(target, "[unknown name]")} (${target})`;
-		const msg = action === "add" ?
+		let targetDescriptor = character.MemberNumber === target ? "herself" : `${getCharacterName(target, "[unknown name]")} (${target})`;
+		logMessage("authority_roles_change", LogEntryType.plaintext, action === "add" ?
 			`${character} added ${targetDescriptor} as ${role}.` :
-			`${character} removed ${targetDescriptor} from being ${role}.`;
-		logMessage("authority_roles_change", LogEntryType.plaintext, msg);
+			`${character} removed ${targetDescriptor} from being ${role}.`
+		);
 		if (!character.isPlayer()) {
-			ChatRoomSendLocal(msg, undefined, character.MemberNumber);
+			targetDescriptor = character.MemberNumber === target ? "herself" : `${getCharacterNickname(target, "[unknown name]")} (${target})`;
+			ChatRoomSendLocal(
+				action === "add" ?
+					`${character.toNicknamedString()} added ${targetDescriptor} as ${role}.` :
+					`${character.toNicknamedString()} removed ${targetDescriptor} from being ${role}.`,
+				undefined, character.MemberNumber
+			);
 		}
 		if (action === "add" && character.MemberNumber !== target) {
-			const user = character.isPlayer() ? "her" : `${Player.Name}'s (${Player.MemberNumber})`;
-			ChatRoomActionMessage(`${character} added you as ${user} BCX ${role}.`, target);
+			const user = character.isPlayer() ? "her" : `TargetCharacterName's (${Player.MemberNumber})`;
+			ChatRoomActionMessage(`SourceCharacter (${character.MemberNumber}) added you as ${user} BCX ${role}.`, target, [
+				{ Tag: "SourceCharacter", MemberNumber: character.MemberNumber, Text: CharacterNickname(character.Character) },
+				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) }
+			]);
 		}
 	}
 
@@ -438,20 +455,20 @@ export class ModuleAuthority extends BaseModule {
 			}
 		});
 
-		queryHandlers.permissions = (sender, resolve) => {
-			resolve(true, permissionsMakeBundle());
+		queryHandlers.permissions = () => {
+			return permissionsMakeBundle();
 		};
-		queryHandlers.permissionAccess = (sender, resolve, data) => {
+		queryHandlers.permissionAccess = (sender, data) => {
 			if (typeof data === "string") {
-				resolve(true, checkPermissionAccess(data, sender));
+				return checkPermissionAccess(data, sender);
 			} else {
-				resolve(false);
+				return undefined;
 			}
 		};
-		queryHandlers.myAccessLevel = (sender, resolve) => {
-			resolve(true, getCharacterAccessLevel(sender));
+		queryHandlers.myAccessLevel = (sender) => {
+			return getCharacterAccessLevel(sender);
 		};
-		queryHandlers.editPermission = (sender, resolve, data) => {
+		queryHandlers.editPermission = (sender, data) => {
 			if (!isObject(data) ||
 				typeof data.permission !== "string" ||
 				(data.edit !== "min" && data.edit !== "self") ||
@@ -459,33 +476,34 @@ export class ModuleAuthority extends BaseModule {
 				(data.edit === "self" && typeof data.target !== "boolean")
 			) {
 				console.warn(`BCX: Bad editPermission query from ${sender}`, data);
-				return resolve(false);
+				return undefined;
 			}
 
 			if (!permissions.has(data.permission)) {
 				console.warn(`BCX: editPermission query from ${sender}; unknown permission`, data);
-				return resolve(false);
+				return undefined;
 			}
 
 			if (data.edit === "self") {
 				if (typeof data.target !== "boolean") {
 					throw new Error("Assertion failed");
 				}
-				return resolve(true, setPermissionSelfAccess(data.permission, data.target, sender));
+				return setPermissionSelfAccess(data.permission, data.target, sender);
 			} else {
 				if (typeof data.target !== "number") {
 					throw new Error("Assertion failed");
 				}
 				if (AccessLevel[data.target] === undefined) {
 					console.warn(`BCX: editPermission query from ${sender}; unknown access level`, data);
-					return resolve(true, false);
+					return false;
 				}
-				return resolve(true, setPermissionMinAccess(data.permission, data.target, sender));
+				return setPermissionMinAccess(data.permission, data.target, sender);
 			}
 		};
 
-		queryHandlers.rolesData = (sender, resolve) => {
+		queryHandlers.rolesData = (sender) => {
 			if (
+				!sender.isPlayer() &&
 				!checkPermissionAccess("authority_view_roles", sender) &&
 				!checkPermissionAccess("authority_mistress_add", sender) &&
 				!checkPermissionAccess("authority_mistress_remove", sender) &&
@@ -494,23 +512,23 @@ export class ModuleAuthority extends BaseModule {
 				!modStorage.mistresses?.includes(sender.MemberNumber) &&
 				!modStorage.owners?.includes(sender.MemberNumber)
 			) {
-				return resolve(false);
+				return undefined;
 			}
 
-			resolve(true, getPlayerRoleData(sender));
+			return getPlayerRoleData(sender);
 		};
 
-		queryHandlers.editRole = (sender, resolve, data) => {
+		queryHandlers.editRole = (sender, data) => {
 			if (!isObject(data) ||
 				data.type !== "owner" && data.type !== "mistress" ||
 				data.action !== "add" && data.action !== "remove" ||
 				typeof data.target !== "number"
 			) {
 				console.warn(`BCX: Bad editRole query from ${sender}`, data);
-				return resolve(false);
+				return undefined;
 			}
 
-			resolve(true, editRole(data.type, data.action, data.target, sender));
+			return editRole(data.type, data.action, data.target, sender);
 		};
 
 		registerWhisperCommand("modules", "role", "- Manage Owner & Mistress roles", (argv, sender, respond) => {
@@ -669,6 +687,51 @@ export class ModuleAuthority extends BaseModule {
 			}
 
 			return [];
+		});
+
+		ExportImportRegisterCategory<PermissionsBundle>({
+			category: `authorityPermissions`,
+			name: `Authority - Permissions`,
+			module: ModuleCategory.Authority,
+			export: () => permissionsMakeBundle(),
+			import: (data, character) => {
+				let res = "";
+
+				for (const [k, v] of Object.entries(data)) {
+					const perm = k as BCX_Permissions;
+					const permData = permissions.get(perm);
+					if (!permData) {
+						res += `Skipped unknown permission '${k}'\n`;
+						continue;
+					}
+					// Silently skip permissions from disabled modules
+					if (!moduleIsEnabled(permData.category))
+						continue;
+
+					if (!v[0] && v[1] === AccessLevel.self) {
+						res += `Error importing permission '${permData.name}': Inconsistent data\n`;
+						continue;
+					}
+
+					if (character && !character.isPlayer() && !checkPermissionAccessData(permData, getCharacterAccessLevel(character))) {
+						res += `Skipped importing permission '${permData.name}': No access\n`;
+						continue;
+					}
+
+					if (character && !character.isPlayer() && getCharacterAccessLevel(character) > v[1]) {
+						res += `Skipped importing permission '${permData.name}' min access: No access to target level\n`;
+					} if (!setPermissionMinAccess(perm, v[1], character, true)) {
+						res += `Error setting minimal access for '${permData.name}'\n`;
+					}
+
+					if (!setPermissionSelfAccess(perm, v[0], character, true)) {
+						res += `Error setting self access for '${permData.name}'\n`;
+					}
+				}
+				return res + `Done!`;
+			},
+			importPermissions: ["authority_grant_self", "authority_revoke_self", "authority_edit_min"],
+			importValidator: zod.record(zod.tuple([zod.boolean(), zod.nativeEnum(AccessLevel)]))
 		});
 	}
 

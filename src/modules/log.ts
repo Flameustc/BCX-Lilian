@@ -11,6 +11,8 @@ import { ModuleCategory, Preset } from "../constants";
 import { Command_fixExclamationMark, COMMAND_GENERIC_ERROR, registerWhisperCommand } from "./commands";
 import { guard_BCX_Rule, RulesGetDisplayDefinition } from "./rules";
 import { cursedChange, CURSES_TRIGGER_LOGS, CURSES_TRIGGER_LOGS_BATCH } from "./cursesConstants";
+import { ExportImportRegisterCategory } from "./export_import";
+import zod from "zod";
 
 export const LOG_ENTRIES_LIMIT = 256;
 
@@ -86,7 +88,7 @@ function logMessageAdd<Type extends LogEntryType>(access: LogAccessLevel, type: 
 	notifyOfChange();
 }
 
-export function logMessageDelete(time: number, character: ChatroomCharacter | null): boolean {
+export function logMessageDelete(time: number | number[], character: ChatroomCharacter | null): boolean {
 	if (!moduleIsEnabled(ModuleCategory.Log))
 		return false;
 
@@ -101,9 +103,11 @@ export function logMessageDelete(time: number, character: ChatroomCharacter | nu
 	if (!modStorage.log) {
 		throw new Error("Mod storage log not initialized");
 	}
-	for (let i = 0; i < modStorage.log.length; i++) {
+	let changed = false;
+	for (let i = modStorage.log.length - 1; i >= 0; i--) {
 		const e = modStorage.log[i];
-		if (e[0] === time) {
+		if ((Array.isArray(time) && time.includes(e[0])) || e[0] === time) {
+			changed = true;
 			if (access === LogAccessLevel.none) {
 				modStorage.log.splice(i, 1);
 			} else {
@@ -111,12 +115,13 @@ export function logMessageDelete(time: number, character: ChatroomCharacter | nu
 				e[2] = LogEntryType.deleted;
 				e[3] = null;
 			}
-			modStorageSync();
-			notifyOfChange();
-			return true;
 		}
 	}
-	return false;
+	if (changed) {
+		modStorageSync();
+		notifyOfChange();
+	}
+	return changed;
 }
 
 export function logConfigSet(category: BCX_LogCategory, accessLevel: LogAccessLevel, character: ChatroomCharacter | null): boolean {
@@ -135,12 +140,19 @@ export function logConfigSet(category: BCX_LogCategory, accessLevel: LogAccessLe
 		return false;
 	}
 
+	if (modStorage.logConfig[category] === accessLevel) {
+		return true;
+	}
+
 	if (character) {
-		const msg = `${character} changed log configuration "${LOG_CONFIG_NAMES[category]}" ` +
-			`from "${LOG_LEVEL_NAMES[modStorage.logConfig[category]!]}" to "${LOG_LEVEL_NAMES[accessLevel]}"`;
-		logMessage("log_config_change", LogEntryType.plaintext, msg);
+		logMessage("log_config_change", LogEntryType.plaintext, `${character} changed log configuration "${LOG_CONFIG_NAMES[category]}" ` +
+			`from "${LOG_LEVEL_NAMES[modStorage.logConfig[category]!]}" to "${LOG_LEVEL_NAMES[accessLevel]}"`);
 		if (!character.isPlayer()) {
-			ChatRoomSendLocal(msg, undefined, character.MemberNumber);
+			ChatRoomSendLocal(
+				`${character.toNicknamedString()} changed log configuration "${LOG_CONFIG_NAMES[category]}" ` +
+				`from "${LOG_LEVEL_NAMES[modStorage.logConfig[category]!]}" to "${LOG_LEVEL_NAMES[accessLevel]}"`,
+				undefined, character.MemberNumber
+			);
 		}
 	}
 
@@ -268,22 +280,22 @@ export function logPraise(value: -1 | 0 | 1, message: string | null, character: 
 	if (value > 0) {
 		if (message) {
 			logMessage("user_note", LogEntryType.plaintext, `Praised by ${character} with note: ${message}`);
-			ChatRoomSendLocal(`${character} praised you with the following note: ${message}`, undefined, character.MemberNumber);
+			ChatRoomSendLocal(`${character.toNicknamedString()} praised you with the following note: ${message}`, undefined, character.MemberNumber);
 		} else {
 			logMessage("praise", LogEntryType.plaintext, `Praised by ${character}`);
-			ChatRoomSendLocal(`${character} praised you.`, undefined, character.MemberNumber);
+			ChatRoomSendLocal(`${character.toNicknamedString()} praised you.`, undefined, character.MemberNumber);
 		}
 	} else if (value < 0) {
 		if (message) {
 			logMessage("user_note", LogEntryType.plaintext, `Scolded by ${character} with note: ${message}`);
-			ChatRoomSendLocal(`${character} scolded you with the following note: ${message}`, undefined, character.MemberNumber);
+			ChatRoomSendLocal(`${character.toNicknamedString()} scolded you with the following note: ${message}`, undefined, character.MemberNumber);
 		} else {
 			logMessage("praise", LogEntryType.plaintext, `Scolded by ${character}`);
-			ChatRoomSendLocal(`${character} scolded you.`, undefined, character.MemberNumber);
+			ChatRoomSendLocal(`${character.toNicknamedString()} scolded you.`, undefined, character.MemberNumber);
 		}
 	} else if (message) {
 		logMessage("user_note", LogEntryType.plaintext, `${character} attached a note: ${message}`);
-		ChatRoomSendLocal(`${character} put the following note on you: ${message}`, undefined, character.MemberNumber);
+		ChatRoomSendLocal(`${character.toNicknamedString()} put the following note on you: ${message}`, undefined, character.MemberNumber);
 	}
 
 	return true;
@@ -303,7 +315,8 @@ const logConfigDefaults: Record<BCX_LogCategory, LogAccessLevel> = {
 	rule_change: LogAccessLevel.none,
 	rule_trigger: LogAccessLevel.none,
 	command_change: LogAccessLevel.none,
-	authority_roles_change: LogAccessLevel.protected
+	authority_roles_change: LogAccessLevel.protected,
+	relationships_change: LogAccessLevel.none
 };
 
 export const LOG_CONFIG_NAMES: Record<BCX_LogCategory, string> = {
@@ -320,7 +333,8 @@ export const LOG_CONFIG_NAMES: Record<BCX_LogCategory, string> = {
 	rule_change: "Log each addition, removal or change of rules",
 	rule_trigger: "Log every rule violation",
 	command_change: "Log each change of commands limit",
-	authority_roles_change: "Log getting or losing a BCX owner/mistress"
+	authority_roles_change: "Log getting or losing a BCX owner/mistress",
+	relationships_change: "Log each change in relationships module"
 };
 
 export const LOG_LEVEL_NAMES: Record<LogAccessLevel, string> = {
@@ -393,48 +407,48 @@ export class ModuleLog extends BaseModule {
 			}
 		});
 
-		queryHandlers.logData = (sender, resolve) => {
-			resolve(true, getVisibleLogEntries(sender));
+		queryHandlers.logData = (sender) => {
+			return getVisibleLogEntries(sender);
 		};
-		queryHandlers.logDelete = (sender, resolve, data) => {
-			if (typeof data === "number") {
-				resolve(true, logMessageDelete(data, sender));
+		queryHandlers.logDelete = (sender, data) => {
+			if (typeof data === "number" || (Array.isArray(data) && data.every(item => typeof item === "number"))) {
+				return logMessageDelete(data, sender);
 			} else {
-				resolve(false);
+				return undefined;
 			}
 		};
-		queryHandlers.logConfigGet = (sender, resolve) => {
-			if (checkPermissionAccess("log_configure", sender)) {
-				resolve(true, logGetConfig());
+		queryHandlers.logConfigGet = (sender) => {
+			if (sender.isPlayer() || checkPermissionAccess("log_configure", sender)) {
+				return logGetConfig();
 			} else {
-				resolve(false);
+				return undefined;
 			}
 		};
-		queryHandlers.logConfigEdit = (sender, resolve, data) => {
+		queryHandlers.logConfigEdit = (sender, data) => {
 			if (!isObject(data) ||
 				typeof data.category !== "string" ||
 				typeof data.target !== "number"
 			) {
 				console.warn(`BCX: Bad logConfigEdit query from ${sender}`, data);
-				return resolve(false);
+				return undefined;
 			}
-			resolve(true, logConfigSet(data.category, data.target, sender));
+			return logConfigSet(data.category, data.target, sender);
 		};
-		queryHandlers.logClear = (sender, resolve) => {
-			resolve(true, logClear(sender));
+		queryHandlers.logClear = (sender) => {
+			return logClear(sender);
 		};
-		queryHandlers.logPraise = (sender, resolve, data) => {
+		queryHandlers.logPraise = (sender, data) => {
 			if (!isObject(data) ||
 				(data.message !== null && typeof data.message !== "string") ||
 				![-1, 0, 1].includes(data.value)
 			) {
 				console.warn(`BCX: Bad logPraise query from ${sender}`, data);
-				return resolve(false);
+				return undefined;
 			}
-			resolve(true, logPraise(data.value, data.message, sender));
+			return logPraise(data.value, data.message, sender);
 		};
-		queryHandlers.logGetAllowedActions = (sender, resolve) => {
-			resolve(true, logGetAllowedActions(sender));
+		queryHandlers.logGetAllowedActions = (sender) => {
+			return logGetAllowedActions(sender);
 		};
 
 		registerWhisperCommand("modules", "log", "- Manage the behaviour log", (argv, sender, respond) => {
@@ -535,6 +549,32 @@ export class ModuleLog extends BaseModule {
 			}
 
 			return [];
+		});
+
+		ExportImportRegisterCategory<LogConfig>({
+			category: `logConfig`,
+			name: `Behaviour Log - Configuration`,
+			module: ModuleCategory.Log,
+			export: () => logGetConfig(),
+			import: (data, character) => {
+				let res = "";
+
+				for (const [k, v] of Object.entries(data)) {
+					const category = k as BCX_LogCategory;
+					if (modStorage.logConfig?.[category] === undefined || LOG_CONFIG_NAMES[category] === undefined) {
+						res += `Skipped unknown log config category '${category}'\n`;
+						continue;
+					}
+
+					if (!logConfigSet(category, v, character)) {
+						res += `Error setting category '${LOG_CONFIG_NAMES[category]}'\n`;
+					}
+				}
+
+				return res + `Done!`;
+			},
+			importPermissions: ["log_configure"],
+			importValidator: zod.record(zod.nativeEnum(LogAccessLevel))
 		});
 	}
 

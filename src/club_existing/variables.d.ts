@@ -24,12 +24,15 @@ declare var CharacterAppearanceSelection: Character | null;
 declare var CharacterAppearanceMode: string;
 declare var CharacterAppearanceWardrobeText: string;
 declare var AppearanceMenu: any[];
+declare var CharacterAppearanceWardrobeOffset: number;
 /** NMod ONLY! */
 declare var AppearanceMode: string;
 declare function CharacterAppearanceYOffset(C: Character, HeightRatio: number, IgnoreUpButton?: boolean): number;
 declare function AppearanceMenuBuild(C: Character): void;
 declare function CharacterAppearanceStripLayer(C: Character): void;
 declare function CharacterAppearanceSetItem(C: Character, Group: string, ItemAsset: Asset | null, NewColor?: string | string[], DifficultyFactor?: number, ItemMemberNumber?: number, Refresh?: boolean): void;
+declare function CharacterAppearanceRestore(C: Character, backup: string): void;
+declare function CharacterAppearanceStringify(C: Character): string;
 
 // Backgrounds.js
 declare var BackgroundsTagList: string[];
@@ -78,6 +81,7 @@ declare function CharacterLoadCanvas(C: Character): void;
 declare function CharacterAppearsInverted(C: Character): boolean;
 declare function CharacterSetActivePose(C: Character, NewPose: string | null, ForceChange?: boolean): void;
 declare function CharacterSetFacialExpression(C: Character, AssetGroup: string, Expression: string | null, Timer?: number, Color?: string | string[]): void;
+declare function CharacterNickname(C: Character): string;
 
 // Element.js
 declare function ElementIsScrolledToEnd(ID: string): boolean;
@@ -154,6 +158,7 @@ declare var ChatRoomMenuButtons: string[];
 declare var ChatRoomPlayerCanJoin: boolean;
 declare var ChatRoomSenseDepBypass: boolean;
 declare var DialogLentLockpicks: boolean;
+declare var ChatRoomSlowtimer: number;
 declare function ChatRoomCurrentTime(): string;
 declare function ChatRoomCharacterUpdate(C: Character): void;
 declare function ChatRoomMessage(data: IChatRoomMessage): void;
@@ -193,6 +198,7 @@ declare var ServerAccountUpdate: {
 	SyncToServer(): void;
 	QueueData(Data: object, Force?: true): void
 };
+declare var ServerCharacterNicknameRegex: RegExp;
 declare function ServerPlayerIsInChatRoom(): boolean;
 declare function ServerSend(Message: string, Data: any): void;
 declare function ServerAppearanceBundle(Appearance: Item[]): AppearanceBundle;
@@ -212,6 +218,13 @@ declare function AssetGetActivity(Family: string, Name: string): Activity | unde
 // Wardrobe.js
 declare function WardrobeAssetBundle(A: Item): ItemBundle;
 declare function WardrobeFastLoad(C: Character, W: number, Update: boolean): void;
+// NMod
+declare function WardrobeExtractBundle(B: any[]): {
+	Name: string;
+	Group: string;
+	Color?: string | string[];
+	Property?: any;
+};
 
 // Inventory.js
 declare function InventoryAdd(C: Character, NewItemName: string, NewItemGroup: string, Push?: boolean): void;
@@ -238,6 +251,7 @@ declare var GLVersion: "webgl2" | "webgl" | "No WebGL";
 // Mouse.js
 declare function MouseIn(Left: number, Top: number, Width: number, Height: number): boolean;
 declare function MouseXIn(Left: number, Width: number): boolean;
+declare function MouseYIn(Top: number, Height: number): boolean;
 
 // Preference.js
 declare var PreferenceDifficultyLevel: any;

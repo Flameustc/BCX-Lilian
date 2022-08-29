@@ -160,15 +160,15 @@ export class ModuleCommandsModule extends BaseModule {
 			}
 		});
 
-		queryHandlers.commandTrigger = (sender, resolve, data) => {
+		queryHandlers.commandTrigger = (sender, data) => {
 			if (!Array.isArray(data) || !data.every(i => typeof i === "string") || data.length < 1) {
-				return resolve(false);
+				return undefined;
 			}
 			const command = data.shift();
 			if (guard_BCX_Command(command)) {
-				resolve(true, CommandsTrigger(command, data, sender, () => { /* NOOP */ }));
+				return CommandsTrigger(command, data, sender, () => { /* NOOP */ });
 			} else {
-				resolve(false);
+				return undefined;
 			}
 		};
 
@@ -259,7 +259,7 @@ export class ModuleCommandsModule extends BaseModule {
 				logMessage("command_change", LogEntryType.plaintext,
 					`${character} changed ${Player.Name}'s '${definition.name}' command permission to ${ConditionsLimit[newLimit]}`);
 				if (!character.isPlayer()) {
-					ChatRoomSendLocal(`${character} changed '${definition.name}' command permission to ${ConditionsLimit[newLimit]}`, undefined, character.MemberNumber);
+					ChatRoomSendLocal(`${character.toNicknamedString()} changed '${definition.name}' command permission to ${ConditionsLimit[newLimit]}`, undefined, character.MemberNumber);
 				}
 			},
 			logConditionUpdate: () => { /* NOOP */ },
@@ -362,7 +362,9 @@ export class ModuleCommandsModule extends BaseModule {
 			if (Date.now() >= this.suspendedUntil) {
 				this.suspendedUntil = null;
 				this.triggerCounts.clear();
-				ChatRoomActionMessage(`All of ${Player.Name}'s temporarily blocked commands can be used again.`);
+				ChatRoomActionMessage(`All of SourceCharacter's temporarily blocked commands can be used again.`, null, [
+					{ Tag: "SourceCharacter", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) }
+				]);
 			} else {
 				return;
 			}

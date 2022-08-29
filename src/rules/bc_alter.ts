@@ -7,6 +7,8 @@ import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { getAllCharactersInRoom, registerEffectBuilder } from "../characters";
 import { isObject } from "../utils";
 import { BCX_setTimeout } from "../BCXContext";
+import { queryHandlers, sendQuery } from "../modules/messaging";
+import { isValidNickname } from "../modules/relationships";
 import { lastArousalData } from "./other";
 
 let forcedOrgasm: boolean = false;
@@ -35,6 +37,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "impacts PLAYER_NAME's hearing; adjustable",
 		longDescription: "This rule impacts PLAYER_NAME's natural ability to hear in the same way items do, independent of them (strength of deafening can be adjusted).",
+		keywords: ["deafness", "limit", "permanent", "ears"],
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			deafeningStrength: {
@@ -66,6 +69,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "of members whom PLAYER_NAME can always understand",
 		longDescription: "This rule defines a list of members whose voice can always be understood by PLAYER_NAME - independent of any sensory deprivation items or hearing impairing BCX rules on PLAYER_NAME. There is an additional option to toggle whether PLAYER_NAME can still understand a white-listed member's voice if that member is speech impaired herself (e.g. by being gagged).",
+		keywords: ["deafness", "bypass", "ignore", "antigarble", "ears", "exception", "understanding"],
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			whitelistedMembers: {
@@ -138,6 +142,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "impacts PLAYER_NAME's sight; adjustable",
 		longDescription: "This rule impacts PLAYER_NAME's natural ability to see in the same way items do, independent of them (strength of blindness can be adjusted).",
+		keywords: ["seeing", "blindfold", "limit", "permanent", "eyes"],
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			blindnessStrength: {
@@ -169,6 +174,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "of members whom PLAYER_NAME can always see",
 		longDescription: "This rule defines a list of members whose appearance can always be seen normally by PLAYER_NAME - independent of any blinding items or seeing impairing BCX rules on PLAYER_NAME.",
+		keywords: ["sight", "blindness", "bypass", "ignore", "antiblind", "blindfold", "eyes", "seeing"],
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			whitelistedMembers: {
@@ -245,6 +251,7 @@ export function initRules_bc_alter() {
 		type: RuleType.Alt,
 		loggable: false,
 		longDescription: "This rule enforces full blindness when the eyes are closed. (Light sensory deprivation setting is still respected and doesn't blind fully)",
+		keywords: ["seeing", "blindness", "eyes", "blindfold", "realistic", "room"],
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			affectPlayer: {
@@ -315,6 +322,7 @@ export function initRules_bc_alter() {
 		type: RuleType.Alt,
 		loggable: false,
 		longDescription: "This rule blacks out the bottom half of the room view when eyes are looking up and the upper half when eyes are looking down.",
+		keywords: ["seeing", "limit", "angle", "room", "blindfold", "partially", "movement", "gaze", "gazing", "teasing", "viewing", "looking"],
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			affectPlayer: {
@@ -358,7 +366,7 @@ export function initRules_bc_alter() {
 					MainCanvas.fillRect(0, bottomY, 1000, limitBottom * height);
 				}
 			});
-			hookFunction("ChatRoomDrawCharacter", 1, (args, next) => {
+			hookFunction("ChatRoomDrawCharacter", 2, (args, next) => {
 				if (args[0])
 					return next(args);
 
@@ -463,7 +471,8 @@ export function initRules_bc_alter() {
 		name: "Fully blind when blindfolded",
 		type: RuleType.Alt,
 		loggable: false,
-		longDescription: "This rule enforces full blindness when wearing any item that limits sight in any way. (This rules does NOT respect Light sensory deprivation setting and always forces player to be fully blind)",
+		longDescription: "This rule enforces full blindness when wearing any item that limits sight in any way. (This rules does NOT respect Light sensory deprivation setting and always forces player to be fully blind. The crafting property 'thin' is not factored in either due to technical limitations. )",
+		keywords: ["seeing", "blindness", "limit", "eyes", "realistic", "room", "light"],
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
 			hookFunction("Player.GetBlindLevel", 2, (args, next) => {
@@ -479,6 +488,7 @@ export function initRules_bc_alter() {
 		type: RuleType.Alt,
 		loggable: false,
 		longDescription: "This rule forces PLAYER_NAME to always leave the room slowly, independent of the items she is wearing. WARNING: Due to limitation in Bondage Club itself, only BCX users will be able to stop PLAYER_NAME from leaving the room. This rule will ignore BC's roleplay difficulty setting 'Cannot be slowed down' and slow down PLAYER_NAME regardless!",
+		keywords: ["slowness", "limit", "leaving", "permanent", "stopping", "exit", "blocking"],
 		defaultLimit: ConditionsLimit.normal,
 		init(state) {
 			registerEffectBuilder(PlayerEffects => {
@@ -494,12 +504,45 @@ export function initRules_bc_alter() {
 		}
 	});
 
+	registerRule("alt_set_leave_slowing", {
+		name: "Set slowed leave time",
+		type: RuleType.Alt,
+		loggable: false,
+		longDescription: "This rule can set the time PLAYER_NAME needs to leave the current room, when items or a rule force her to leave it slowly. The time can be set between 1 and 600 seconds (10 mins).",
+		keywords: ["slowness", "limit", "leaving", "customized", "increase", "higher", "stopping", "exit", "blocking", "room"],
+		defaultLimit: ConditionsLimit.limited,
+		dataDefinition: {
+			leaveTime: {
+				type: "number",
+				default: 10,
+				options: {
+					min: 1,
+					max: 600
+				},
+				description: "New leave time in seconds:"
+			}
+		},
+		init(state) {
+			hookFunction("ChatRoomMenuClick", 2, (args, next) => {
+				if (!state.isEnforced)
+					return next(args);
+
+				const oldSlowTimer = ChatRoomSlowtimer;
+				next(args);
+				if (state.customData && oldSlowTimer === 0 && ChatRoomSlowtimer > 0) {
+					ChatRoomSlowtimer = CurrentTime + state.customData.leaveTime * 1000;
+				}
+			});
+		}
+	});
+
 	registerRule("alt_control_orgasms", {
 		name: "Control ability to orgasm",
 		type: RuleType.Alt,
 		loggable: false,
 		shortDescription: "adjustable: only-edge, only-ruin, no-resist",
 		longDescription: "This rule impacts PLAYER_NAME's ability to control their orgasms, independent of items. There are three control options, which are: Never cum (always edge, the bar never reaches 100%), force into ruined orgasm (orgasm screen starts, but doesn't let her actually cum) and prevent resisting orgasm (able to enter orgasm screen, but unable to resist it).",
+		keywords: ["deny", "denial", "prevent", "edging", "hypno", "cumming"],
 		defaultLimit: ConditionsLimit.limited,
 		dataDefinition: {
 			orgasmHandling: {
@@ -684,6 +727,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "unable to see the own arousal meter",
 		longDescription: "This rule prevents PLAYER_NAME from seeing their own arousal meter, even while it is active and working. This means, that it is a surprise to them, when the orgasm (quick-time event) happens. Does not effect other characters being able to see the meter, if club settings allow that.",
+		keywords: ["hide", "hidden", "control", "cumming"],
 		defaultLimit: ConditionsLimit.limited,
 		load(state) {
 			hookFunction("DrawArousalMeter", 5, (args, next) => {
@@ -762,6 +806,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "give admin to defined roles",
 		longDescription: "This rule lets you define a minimum role which PLAYER_NAME will automatically give room admin rights to (if she has admin rights in the room). Also has the option to remove admin rights from PLAYER_NAME afterwards.",
+		keywords: ["automatic", "authority", "power", "exchange", "loss", "control"],
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
 			minimumRole: {
@@ -832,6 +877,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "restrict room admin powers while restrained",
 		longDescription: "This rule forbids PLAYER_NAME to do any room admin actions (except for kick/ban), when she is restrained. Note: This rule does not affect an admin's ability to bypass locked rooms, if restraints allow it. Tip: This rule can be combined with the rule 'Force ´Return to chatrooms on relog´' to trap PLAYER_NAME in it.",
+		keywords: ["restraints", "authority", "suppressing", "bindings", "helpless"],
 		defaultLimit: ConditionsLimit.limited,
 		triggerTexts: {
 			attempt_infoBeep: "You are forbidden from changing room settings while restrained"
@@ -909,6 +955,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "directly sets PLAYER_NAME's description",
 		longDescription: "This rule sets PLAYER_NAME's online description (in her profile) to any text entered in the rule config, blocking changes to it. Warning: This rule is editing the actual profile text. This means that after saving a changed text, the original text is lost!",
+		keywords: ["edit", "change", "force", "biography", "information", "story", "control"],
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
 			playersProfileDescription: {
@@ -934,12 +981,50 @@ export function initRules_bc_alter() {
 		}
 	});
 
+	registerRule("alt_set_nickname", {
+		name: "Control nickname",
+		type: RuleType.Alt,
+		loggable: false,
+		shortDescription: "directly sets PLAYER_NAME's nickname",
+		longDescription: "This rule sets PLAYER_NAME's nickname (replacing her name in most cases) to any text entered in the rule config, blocking changes to it.",
+		keywords: ["edit", "change", "force", "petname", "naming"],
+		defaultLimit: ConditionsLimit.blocked,
+		dataDefinition: {
+			nickname: {
+				type: "string",
+				default: () => (
+					(Player.Nickname && isValidNickname(Player.Nickname)) ? Player.Nickname :
+						isValidNickname(Player.Name) ? Player.Name :
+							""
+				),
+				description: "Set this player's nickname:",
+				options: /^[\p{L}0-9\p{Z}'-]{0,20}$/u
+			}
+		},
+		tick(state) {
+			if (state.isEnforced && state.customData) {
+				let nick = state.customData.nickname.trim();
+				if (nick === Player.Name) {
+					nick = "";
+				}
+				if (Player.Nickname !== nick) {
+					Player.Nickname = nick;
+					ServerAccountUpdate.QueueData({ Nickname: nick }, true);
+					state.trigger();
+					return true;
+				}
+			}
+			return false;
+		}
+	});
+
 	registerRule("alt_force_suitcase_game", {
 		name: "Always carry a suitcase",
 		type: RuleType.Alt,
 		loggable: false,
 		shortDescription: "from the kidnappers league multiplayer game",
 		longDescription: "This rule forces PLAYER_NAME to constantly participate in the kidnappers league's suitcase delivery task, by automatically giving her a new suitcase, whenever the suitcase item slot is empty.",
+		keywords: ["permanent", "money", "tasks"],
 		defaultLimit: ConditionsLimit.normal,
 		tick(state) {
 			const misc = InventoryGet(Player, "ItemMisc");
@@ -956,6 +1041,7 @@ export function initRules_bc_alter() {
 		type: RuleType.Alt,
 		loggable: false,
 		longDescription: "This rule only allows selected roles to leash PLAYER_NAME, responding with a message about unsuccessful leashing to others when they attempt to do so.",
+		keywords: ["limit", "prevent", "leashing", "room"],
 		defaultLimit: ConditionsLimit.limited,
 		dataDefinition: {
 			minimumRole: {
@@ -974,7 +1060,11 @@ export function initRules_bc_alter() {
 					state.customData &&
 					getCharacterAccessLevel(sourceMemberNumber) > state.customData.minimumRole
 				) {
-					ChatRoomActionMessage(`${Player.Name}'s leash seems to be cursed and slips out of ${getCharacterName(sourceMemberNumber, "[unknown]")}'s hand.`);
+					const character = getChatroomCharacter(sourceMemberNumber);
+					ChatRoomActionMessage(`SourceCharacter's leash seems to be cursed and slips out of TargetCharacterName's hand.`, null, [
+						{ Tag: "SourceCharacter", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
+						{ Tag: "TargetCharacterName", MemberNumber: sourceMemberNumber, Text: character ? CharacterNickname(character.Character) : getCharacterName(sourceMemberNumber, "[unknown]") }
+					]);
 					return false;
 				}
 				return next(args);
@@ -988,6 +1078,7 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "also preventing beeps from the friendlist - exceptions settable",
 		longDescription: "This rule hides persons on PLAYER_NAME's friend list when she is fully blinded, which also makes sending beeps impossible. Received beeps can still be answered. The rule allows to manage a list of members who can be seen normally.",
+		keywords: ["blindfold", "control"],
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
 			allowedMembers: {
@@ -1025,8 +1116,9 @@ export function initRules_bc_alter() {
 		loggable: false,
 		shortDescription: "leash PLAYER_NAME from anywhere using a beep with message",
 		longDescription: "This rule forces PLAYER_NAME to switch rooms from anywhere in the club to the chat room of the summoner after 15 seconds. It works by sending a beep message with the set text or simply the word 'summon' to PLAYER_NAME. Members who are allowed to summon PLAYER_NAME can be set. NOTES: PLAYER_NAME can always be summoned no matter if she has a leash or is prevented from leaving the room (ignoring restraints or locked rooms). However, if the target room is full or locked, she will end up in the lobby. Summoning will not work if the room name is not included with the beep message!",
+		keywords: ["leashing", "room", "calling", "ordering", "move", "moving", "movement", "warping", "beaming", "transporting"],
 		triggerTexts: {
-			infoBeep: "You are summoned by SUMMONER!"
+			infoBeep: "You are summoned by TARGET_PLAYER!"
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
@@ -1067,14 +1159,18 @@ export function initRules_bc_alter() {
 					(data.Message.toLocaleLowerCase().startsWith(state.customData.summoningText.trim().toLocaleLowerCase()) || data.Message.trim().toLocaleLowerCase() === "summon") &&
 					data.ChatRoomName
 				) {
-					ChatRoomActionMessage(`${Player.Name} received a summon: "${state.customData.summoningText}".`);
+					ChatRoomActionMessage(`SourceCharacter received a summon: "${state.customData.summoningText}".`, null, [
+						{ Tag: "SourceCharacter", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) }
+					]);
 					beep = true;
 					BCX_setTimeout(() => {
 						// Check if rule is still in effect or if we are already there
 						if (!state.isEnforced || (ServerPlayerIsInChatRoom() && ChatRoomData.Name === data.ChatRoomName)) return;
 
 						// leave
-						ChatRoomActionMessage(`The demand for ${Player.Name}'s presence is now enforced.`);
+						ChatRoomActionMessage(`The demand for SourceCharacter's presence is now enforced.`, null, [
+							{ Tag: "SourceCharacter", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) }
+						]);
 						DialogLentLockpicks = false;
 						ChatRoomClearAllElements();
 						ServerSend("ChatRoomLeave", "");
@@ -1089,8 +1185,81 @@ export function initRules_bc_alter() {
 					}, state.customData.summonTime * 1000);
 				}
 				next(args);
-				if (beep) state.triggerAttempt({ SUMMONER: `${data.MemberName} (${data.MemberNumber})` });
+				if (beep) state.triggerAttempt(data.MemberNumber);
 				beep = false;
+			}, ModuleCategory.Rules);
+		}
+	});
+
+	registerRule("alt_allow_changing_appearance", {
+		name: "Allow changing the whole appearance",
+		type: RuleType.Alt,
+		loggable: false,
+		shortDescription: "of PLAYER_NAME - for the defined roles",
+		keywords: ["force", "setting", "wardrobe", "body", "modifications"],
+		longDescription: "This rule lets you define a minimum role which (and all higher roles) has permission to fully change the whole appearance of PLAYER_NAME (body and cosplay items), ignoring the settings of the BC online preferences 'Allow others to alter your whole appearance' and 'Prevent others from changing cosplay items'. So this rule can define a group of people which is allowed, while everyone else is not. IMPORTANT: Only other BCX users will be able to change PLAYER_NAME's appearance if this rule allows them to, while the BC settings would forbid them to.",
+		defaultLimit: ConditionsLimit.blocked,
+		dataDefinition: {
+			minimumRole: {
+				type: "roleSelector",
+				default: AccessLevel.owner,
+				description: "Minimum role that is allowed:"
+			}
+		},
+		init(state) {
+			queryHandlers.rule_alt_allow_changing_appearance = (sender) => {
+				return state.inEffect && !!state.customData && getCharacterAccessLevel(sender) <= state.customData.minimumRole;
+			};
+			let appearanceCharacterAllowed: null | number = null;
+			hookFunction("CharacterAppearanceLoadCharacter", 0, (args, next) => {
+				appearanceCharacterAllowed = null;
+				const C = args[0] as Character;
+				const char = C.MemberNumber && getChatroomCharacter(C.MemberNumber);
+				if (!C.IsPlayer() && char && char.BCXVersion) {
+					sendQuery("rule_alt_allow_changing_appearance", undefined, char.MemberNumber).then(res => {
+						if (res) {
+							appearanceCharacterAllowed = char.MemberNumber;
+						}
+					});
+				}
+				return next(args);
+			}, null);
+			hookFunction("WardrobeGroupAccessible", 4, (args, next) => {
+				const C = args[0] as Character;
+				if (!C.IsPlayer() && C.MemberNumber && C.MemberNumber === appearanceCharacterAllowed && C.OnlineSharedSettings) {
+					const AllowFullWardrobeAccess = C.OnlineSharedSettings.AllowFullWardrobeAccess;
+					const BlockBodyCosplay = C.OnlineSharedSettings.BlockBodyCosplay;
+					try {
+						C.OnlineSharedSettings.AllowFullWardrobeAccess = true;
+						C.OnlineSharedSettings.BlockBodyCosplay = false;
+						return next(args);
+					} finally {
+						C.OnlineSharedSettings.AllowFullWardrobeAccess = AllowFullWardrobeAccess;
+						C.OnlineSharedSettings.BlockBodyCosplay = BlockBodyCosplay;
+					}
+				}
+				return next(args);
+			}, null);
+		},
+		load(state) {
+			const allow = (memberNumber: number): boolean => {
+				return state.inEffect && !!state.customData && getCharacterAccessLevel(memberNumber) <= state.customData.minimumRole;
+			};
+			hookFunction("ValidationCanAddOrRemoveItem", 4, (args, next) => {
+				const params = args[1] as AppearanceUpdateParameters;
+				if (allow(params.sourceMemberNumber) && params.C.IsPlayer() && params.C.OnlineSharedSettings) {
+					const AllowFullWardrobeAccess = params.C.OnlineSharedSettings.AllowFullWardrobeAccess;
+					const BlockBodyCosplay = params.C.OnlineSharedSettings.BlockBodyCosplay;
+					try {
+						params.C.OnlineSharedSettings.AllowFullWardrobeAccess = true;
+						params.C.OnlineSharedSettings.BlockBodyCosplay = false;
+						return next(args);
+					} finally {
+						params.C.OnlineSharedSettings.AllowFullWardrobeAccess = AllowFullWardrobeAccess;
+						params.C.OnlineSharedSettings.BlockBodyCosplay = BlockBodyCosplay;
+					}
+				}
+				return next(args);
 			}, ModuleCategory.Rules);
 		}
 	});

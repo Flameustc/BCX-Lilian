@@ -39,6 +39,7 @@ export function initRules_other() {
 		enforceable: false,
 		shortDescription: "logs whenever PLAYER_NAME is inactive",
 		longDescription: "This rule forbids PLAYER_NAME to go afk and logs when the allowed inactivity threshold is overstepped.",
+		keywords: ["inactivity", "detect", "record"],
 		triggerTexts: {
 			log: "PLAYER_NAME became inactive, which was forbidden",
 			announce: ""
@@ -78,6 +79,7 @@ export function initRules_other() {
 		loggable: false,
 		shortDescription: "counts the time this rule's trigger conditions were fulfilled",
 		longDescription: "This rule shows the amount of time that PLAYER_NAME spent (online) in the club, since the rule was added, while all of the rule's trigger conditions were fulfilled. So it can for instance log the time spent in public rooms / in the club in general, or in a specific room or with some person as part of a roleplayed task or order. The currently tracked time can be inquired by whispering '!ruletime' to PLAYER_NAME. To reset the counter, remove and add the rule again.",
+		keywords: ["record", "stopwatch", "timer", "online"],
 		internalDataValidate: (v) => typeof v === "number",
 		internalDataDefault: () => 0,
 		defaultLimit: ConditionsLimit.blocked,
@@ -129,8 +131,9 @@ export function initRules_other() {
 		type: RuleType.Other,
 		loggable: false,
 		enforceable: false,
-		shortDescription: "regularily show configurable sentences to PLAYER_NAME",
+		shortDescription: "regularly show configurable sentences to PLAYER_NAME",
 		longDescription: "This rule reminds or tells PLAYER_NAME one of the recorded sentences at random in a settable interval. Only PLAYER_NAME can see the set message and it is only shown if in a chat room.",
+		keywords: ["hear", "voices", "in", "head", "messages", "periodic"],
 		defaultLimit: ConditionsLimit.limited,
 		dataDefinition: {
 			reminderText: {
@@ -165,6 +168,7 @@ export function initRules_other() {
 		enforceable: false,
 		shortDescription: "spending and/or getting money",
 		longDescription: "This rule logs whenever money is used to buy something. It also shows how much money PLAYER_NAME currently has in the log entry. Optionally, earning money can also be logged. Note: Please be aware that this last option can potentially fill the whole behaviour log rapidly.",
+		keywords: ["record", "balance", "earnings", "using", "tracking", "logging", "entry", "financial", "findom"],
 		triggerTexts: {
 			infoBeep: "A BCX rule has logged this financial transaction!",
 			log: "PLAYER_NAME TYPE money: AMOUNT $ | new balance: BALANCE $",
@@ -194,10 +198,10 @@ export function initRules_other() {
 					state.internalData = Player.Money;
 				}
 				if (state.internalData > Player.Money) {
-					state.trigger({ TYPE: "spent", AMOUNT: `${state.internalData - Player.Money}`, BALANCE: `${Player.Money}` });
+					state.trigger(null, { TYPE: "spent", AMOUNT: `${state.internalData - Player.Money}`, BALANCE: `${Player.Money}` });
 					returnValue = true;
 				} else if (state.internalData < Player.Money && state.customData && state.customData.logEarnings) {
-					state.trigger({ TYPE: "earned", AMOUNT: `${Player.Money - state.internalData}`, BALANCE: `${Player.Money}` });
+					state.trigger(null, { TYPE: "earned", AMOUNT: `${Player.Money - state.internalData}`, BALANCE: `${Player.Money}` });
 					returnValue = true;
 				}
 				if (state.internalData !== Player.Money) {
@@ -225,7 +229,6 @@ export function initRules_other() {
 			if (index < 0)
 				break;
 			hiddenItems.splice(index, 1);
-			ServerPlayerBlockItemsSync();
 		}
 	};
 
@@ -244,6 +247,7 @@ export function initRules_other() {
 		enforceable: false,
 		shortDescription: "logs if PLAYER_NAME enters the club without BCX",
 		longDescription: "This rule observes PLAYER_NAME, logging it as a rule violation if the club was previously entered at least once without BCX active.",
+		keywords: ["record", "online", "force", "useage", "using", "login"],
 		triggerTexts: {
 			infoBeep: "You logged in without starting BCX beforehand!",
 			log: "PLAYER_NAME logged in without starting BCX beforehand at least once",

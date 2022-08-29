@@ -3,6 +3,7 @@ import { BaseModule } from "./_BaseModule";
 import { hookFunction, patchFunction } from "../patching";
 import { MiscCheat } from "../constants";
 import { modStorage, modStorageSync } from "./storage";
+import { NICKNAME_REGEX } from "./relationships";
 
 export const cheatChangeHooks: Partial<Record<MiscCheat, (enabled: boolean) => void>> = {};
 
@@ -196,13 +197,11 @@ export class ModuleMiscPatches extends BaseModule {
 			return next(args) || CurrentScreen === "GetUp";
 		});
 
-		// fixes possible crash with consoled data
-		hookFunction("ServerAppearanceLoadFromBundle", 100, (args, next) => {
-			if (!Array.isArray(args[2])) {
-				args[2] = [];
-			}
-			return next(args);
+		// Widen possible nicknames
+		patchFunction("CharacterNickname", {
+			"/^[a-zA-Z\\s]*$/": "/^[\\p{L}0-9\\p{Z}'-]+$/u"
 		});
+		ServerCharacterNicknameRegex = NICKNAME_REGEX;
 	}
 
 	run() {

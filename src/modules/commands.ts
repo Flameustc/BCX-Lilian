@@ -467,7 +467,7 @@ export function Command_selectCharacterAutocomplete(selector: string): string[] 
 }
 
 export function Command_selectWornItem(character: ChatroomCharacter, selector: string, filter: (item: Item) => boolean = isBind): Item | string {
-	const items = character.Character.Appearance.filter(filter);
+	const items = character.Character.Appearance.filter((i) => filter(i));
 	let targets = items.filter(A => A.Asset.Group.Name.toLocaleLowerCase() === selector.toLocaleLowerCase());
 	if (targets.length === 0)
 		targets = items.filter(A => getVisibleGroupName(A.Asset.Group).toLocaleLowerCase() === selector.toLocaleLowerCase());
@@ -486,7 +486,7 @@ export function Command_selectWornItem(character: ChatroomCharacter, selector: s
 }
 
 export function Command_selectWornItemAutocomplete(character: ChatroomCharacter, selector: string, filter: (item: Item) => boolean = isBind): string[] {
-	const items = character.Character.Appearance.filter(filter);
+	const items = character.Character.Appearance.filter((i) => filter(i));
 
 	let possible = arrayUnique(
 		items.map(A => getVisibleGroupName(A.Asset.Group))
@@ -504,7 +504,7 @@ export function Command_selectWornItemAutocomplete(character: ChatroomCharacter,
 }
 
 export function Command_selectGroup(selector: string, character: ChatroomCharacter | null, filter?: (group: AssetGroup) => boolean): AssetGroup | string {
-	let targets = AssetGroup.filter(G => G.Name.toLocaleLowerCase() === selector.toLocaleLowerCase() && (!filter || filter(G)));
+	let targets = AssetGroup.filter(G => G.Name.toLocaleLowerCase() === selector.toLocaleLowerCase() && G.AllowCustomize && (!filter || filter(G)));
 	if (targets.length === 0)
 		targets = AssetGroup.filter(G => getVisibleGroupName(G).toLocaleLowerCase() === selector.toLocaleLowerCase() && (!filter || filter(G)));
 
@@ -525,7 +525,7 @@ export function Command_selectGroupAutocomplete(selector: string, character: Cha
 
 	let possible = arrayUnique(
 		AssetGroup
-			.filter(G => !filter || filter(G))
+			.filter(G => G.AllowCustomize && (!filter || filter(G)))
 			.map(G => getVisibleGroupName(G))
 			.concat(
 				items
@@ -537,7 +537,7 @@ export function Command_selectGroupAutocomplete(selector: string, character: Cha
 	if (possible.length === 0) {
 		possible = arrayUnique(
 			AssetGroup
-				.filter(G => !filter || filter(G))
+				.filter(G => G.AllowCustomize && (!filter || filter(G)))
 				.map<string>(G => G.Name)
 				.concat(
 					items
@@ -670,15 +670,13 @@ export class ModuleCommands extends BaseModule {
 			return next(args);
 		});
 
-		queryHandlers.commandHint = (sender, resolve, data) => {
+		queryHandlers.commandHint = (sender, data) => {
 			if (typeof data !== "string" || !data.startsWith("!") || data.startsWith("!!")) {
-				return resolve(false);
+				return undefined;
 			}
 
-			resolve(true,
-				WhisperCommandAutocomplete(data.substring(1), sender)
-					.map(i => ["!" + i[0], i[1]])
-			);
+			return WhisperCommandAutocomplete(data.substring(1), sender)
+				.map(i => ["!" + i[0], i[1]]);
 		};
 
 		registerCommand("hidden", "help", "- Display this help [alias: . ]", (arg) => {

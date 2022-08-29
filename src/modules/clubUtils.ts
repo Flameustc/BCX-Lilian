@@ -11,6 +11,8 @@ import { arrayUnique, shuffleArray } from "../utils";
 import { modStorage } from "./storage";
 import { BCX_setTimeout } from "../BCXContext";
 import { getAllCharactersInRoom } from "../characters";
+import { AccessLevel, registerPermission } from "./authority";
+import { ModuleCategory, Preset } from "../constants";
 
 const BACKGROUNDS_BCX_NAME = "[BCX] Hidden";
 
@@ -146,7 +148,22 @@ function rollDice(sides: number, rolls: number) {
 	ChatRoomSendLocal(`You secretly roll a ${rolls}D${sides}. The result is: ${result.length === 1 ? result : result.join(",") + " = " + result.reduce((a, b) => a + b, 0).toString()}.`);
 }
 
+const activitiesAllowed = new Set<number>();
+
 export class ModuleClubUtils extends BaseModule {
+	init() {
+		registerPermission("misc_cheat_allowactivities", {
+			name: "Allow using the allowactivities command on this player",
+			category: ModuleCategory.Misc,
+			defaults: {
+				[Preset.dominant]: [true, AccessLevel.whitelist],
+				[Preset.switch]: [true, AccessLevel.friend],
+				[Preset.submissive]: [true, AccessLevel.friend],
+				[Preset.slave]: [true, AccessLevel.friend]
+			}
+		});
+	}
+
 	load() {
 		registerCommandParsed("utility", "dice", "[dice sides | <rolls>d<dice sides>] - Shows only you the result of rolling a dice the given number of times",
 			(args) => {
@@ -433,8 +450,19 @@ export class ModuleClubUtils extends BaseModule {
 		//#endregion
 		//#region Hidden room backgrounds
 		registerCommand("utility", "background", "<name> - Changes chat room background", processBackgroundCommand, processBackgroundCommand_autocomplete);
-		// Add new backgrounds to the list
 
+		// Add missing tags to tag list
+		const availableTags = new Set<string>();
+		for (const background of BackgroundsList) {
+			background.Tag.forEach(t => availableTags.add(t));
+		}
+		for (const tag of availableTags) {
+			if (!BackgroundsTagList.includes(tag)) {
+				BackgroundsTagList.push(tag);
+			}
+		}
+
+		// Add new backgrounds to the list
 		if (!BackgroundsTagList.includes(BACKGROUNDS_BCX_NAME)) {
 			BackgroundsTagList.push(BACKGROUNDS_BCX_NAME);
 		}
@@ -497,10 +525,10 @@ export class ModuleClubUtils extends BaseModule {
 				return [];
 			}
 		);
-		registerCommandParsed("cheats", "allowactivities", "<character> <item> - Modifies item to not block activities",
+		registerCommandParsed("cheats", "allowactivities", "<character> - Allows you to use all activities on target",
 			(argv) => {
-				if (argv.length !== 2) {
-					ChatRoomSendLocal(`Expected two arguments: <character> <item>`);
+				if (argv.length !== 1) {
+					ChatRoomSendLocal(`Expected one argument: <character>`);
 					return false;
 				}
 				const char = Command_selectCharacter(argv[0]);
@@ -508,31 +536,42 @@ export class ModuleClubUtils extends BaseModule {
 					ChatRoomSendLocal(char);
 					return false;
 				}
-				const item = Command_selectWornItem(char, argv[1]);
-				if (typeof item === "string") {
-					ChatRoomSendLocal(item);
-					return false;
+				if (activitiesAllowed.has(char.MemberNumber)) {
+					activitiesAllowed.delete(char.MemberNumber);
+					ChatRoomSendLocal(`You can no longer use all activities on ${char.toNicknamedString()}`);
+				} else if (!char.BCXVersion) {
+					ChatRoomSendLocal(`This cheat can only be used on characters that are using BCX too.`);
+				} else {
+					char.getPermissionAccess("misc_cheat_allowactivities")
+						.then((res) => {
+							if (res) {
+								activitiesAllowed.add(char.MemberNumber);
+								ChatRoomSendLocal(`You can now use any activities on ${char.toNicknamedString()}, independent of items or clothes she is wearing`);
+							} else {
+								ChatRoomSendLocal(`You are missing the permission 'Allow using the allowactivities command on this player' for ${char.toNicknamedString()}.`);
+							}
+						}, (error) => {
+							console.warn("Error getting permission for allowactivities", error);
+							ChatRoomSendLocal(`Error getting permission to use all activities on ${char.toNicknamedString()}:\n${error}`);
+						});
 				}
-				if (!item.Property) {
-					item.Property = {};
-				}
-				item.Property.AllowActivityOn = AssetGroup.map(A => A.Name);
-				CharacterRefresh(char.Character);
-				ChatRoomCharacterUpdate(char.Character);
 				return true;
 			},
 			(argv) => {
 				if (argv.length === 1) {
 					return Command_selectCharacterAutocomplete(argv[0]);
-				} else if (argv.length === 2) {
-					const source = Command_selectCharacter(argv[0]);
-					if (typeof source !== "string") {
-						return Command_selectWornItemAutocomplete(source, argv[1]);
-					}
 				}
 				return [];
 			}
 		);
+		hookFunction("ActivityCheckPrerequisite", 6, (args, next) => {
+			const prereq = args[0] as string;
+			const acted = args[2] as Character;
+			if (!prereq.startsWith("Needs-") && acted.MemberNumber != null && activitiesAllowed.has(acted.MemberNumber))
+				return true;
+			return next(args);
+		}, null);
+
 		registerCommand("utility", "garble", "<level> <message> - Converts the given message to gag talk",
 			(arg) => {
 				const chat = document.getElementById("InputChat") as HTMLTextAreaElement | null;

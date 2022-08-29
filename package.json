@@ -1,9 +1,9 @@
 {
 	"name": "bondage-club-extended",
-	"version": "0.8.4",
+	"version": "0.9.0",
 	"repository": "git@github.com:jomshir98/bondage-club-extended.git",
 	"author": "jomshir98 <jomshir98@protonmail.com>",
-	"license": "MIT",
+	"license": "GPL-3.0",
 	"private": true,
 	"scripts": {
 		"build": "rollup -c",
@@ -17,7 +17,8 @@
 		"@types/lz-string": "^1.3.34",
 		"@types/socket.io-client": "^3.0.0",
 		"bondage-club-mod-sdk": "^1.0.2",
-		"lodash-es": "^4.17.21"
+		"lodash-es": "^4.17.21",
+		"zod": "^3.17.10"
 	},
 	"devDependencies": {
 		"@rollup/plugin-commonjs": "^22.0.1",

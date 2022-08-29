@@ -25,7 +25,7 @@ export function initCommands_definitions() {
 
 	registerCommand("eyes", {
 		name: "Eyes",
-		helpDescription: `<${Object.keys(eyesExpressions).join("|")}>`,
+		helpDescription: `<${Object.keys(eyesExpressions).join(" | ")}>`,
 		shortDescription: "Control PLAYER_NAME's eyes",
 		longDescription:
 			`This command forces PLAYER_NAME's eyes into the specified state, but they can still manually change it.\n` +
@@ -51,7 +51,7 @@ export function initCommands_definitions() {
 				const text = eyesTexts[argv[0].toLowerCase()];
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
-						SENDER_NAME: sender.Name,
+						SENDER_NAME: sender.Nickname,
 						SENDER_NUMBER: `${sender.MemberNumber}`
 					}), undefined, sender.MemberNumber);
 				}
@@ -84,7 +84,7 @@ export function initCommands_definitions() {
 
 	registerCommand("mouth", {
 		name: "Mouth",
-		helpDescription: `<${Object.keys(mouthExpressions).join("|")}>`,
+		helpDescription: `<${Object.keys(mouthExpressions).join(" | ")}>`,
 		shortDescription: "Control PLAYER_NAME's mouth",
 		longDescription:
 			`This command forces PLAYER_NAME's mouth into the specified state, but they can still manually change it.\n` +
@@ -110,7 +110,7 @@ export function initCommands_definitions() {
 				const text = mouthTexts[argv[0].toLowerCase()];
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
-						SENDER_NAME: sender.Name,
+						SENDER_NAME: sender.Nickname,
 						SENDER_NUMBER: `${sender.MemberNumber}`
 					}), undefined, sender.MemberNumber);
 				}
@@ -159,7 +159,7 @@ export function initCommands_definitions() {
 
 	registerCommand("arms", {
 		name: "Arms",
-		helpDescription: `<${Object.keys(posesArms).join("|")}>`,
+		helpDescription: `<${Object.keys(posesArms).join(" | ")}>`,
 		shortDescription: "Control PLAYER_NAME's arm poses",
 		longDescription:
 			`This command forces PLAYER_NAME's arms into the specified pose, but they can still manually change it. Some may be unavailable, due to restricting items, etc.\n` +
@@ -195,7 +195,7 @@ export function initCommands_definitions() {
 				const text = armsTexts[argv[0].toLowerCase()];
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
-						SENDER_NAME: sender.Name,
+						SENDER_NAME: sender.Nickname,
 						SENDER_NUMBER: `${sender.MemberNumber}`
 					}), undefined, sender.MemberNumber);
 				}
@@ -212,7 +212,7 @@ export function initCommands_definitions() {
 
 	registerCommand("legs", {
 		name: "Legs",
-		helpDescription: `<${Object.keys(posesLegs).join("|")}>`,
+		helpDescription: `<${Object.keys(posesLegs).join(" | ")}>`,
 		shortDescription: "Control PLAYER_NAME's leg poses",
 		longDescription:
 			`This command forces PLAYER_NAME's legs into the specified pose, but they can still manually change it. Some may be unavailable, due to restricting items, etc.\n` +
@@ -248,7 +248,7 @@ export function initCommands_definitions() {
 				const text = legsTexts[argv[0].toLowerCase()];
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
-						SENDER_NAME: sender.Name,
+						SENDER_NAME: sender.Nickname,
 						SENDER_NUMBER: `${sender.MemberNumber}`
 					}), undefined, sender.MemberNumber);
 				}
@@ -313,7 +313,10 @@ export function initCommands_definitions() {
 
 			// leave
 			InfoBeep(`You got ordered by ${sender} to wait in another room.`, 8_000);
-			ChatRoomActionMessage(`${Player.Name} received an order by ${sender.Name} (${sender.MemberNumber}) to wait in another room.`);
+			ChatRoomActionMessage(`TargetCharacterName received an order by SourceCharacter (${sender.MemberNumber}) to wait in another room.`, null, [
+				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+			]);
 			DialogLentLockpicks = false;
 			ChatRoomClearAllElements();
 			ServerSend("ChatRoomLeave", "");
@@ -385,7 +388,10 @@ export function initCommands_definitions() {
 				return false;
 			}
 			InfoBeep(`Two maids locked you into a timer cell, following ${sender}'s command.`, 8_000);
-			ChatRoomActionMessage(`${Player.Name} gets grabbed by two maids and locked in a timer cell, following ${sender}'s command.`);
+			ChatRoomActionMessage(`TargetCharacterName gets grabbed by two maids and locked in a timer cell, following SourceCharacter's (${sender.MemberNumber}) command.`, null, [
+				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+			]);
 			DialogLentLockpicks = false;
 			ChatRoomClearAllElements();
 			ServerSend("ChatRoomLeave", "");
@@ -417,7 +423,7 @@ export function initCommands_definitions() {
 			if (argv[0] === "cancel") {
 				LogDelete("Committed", "Asylum", true);
 				respond(`You freed ${Player.Name}. She can now leave the Asylum again.`);
-				ChatRoomSendLocal(`${sender} freed you. You are now able to leave the Asylum again.`);
+				ChatRoomSendLocal(`${sender.toNicknamedString()} freed you. You are now able to leave the Asylum again.`);
 				return true;
 			}
 			let time = 0;
@@ -434,7 +440,10 @@ export function initCommands_definitions() {
 				return false;
 			}
 			InfoBeep(`Two nurses locked you in the Asylum, following ${sender}'s command.`, 8_000);
-			ChatRoomActionMessage(`${Player.Name} gets grabbed by two nurses and locked in the Asylum, following ${sender}'s command.`);
+			ChatRoomActionMessage(`TargetCharacterName gets grabbed by two nurses and locked in the Asylum, following SourceCharacter's (${sender.MemberNumber}) command.`, null, [
+				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+			]);
 			DialogLentLockpicks = false;
 			ChatRoomClearAllElements();
 			ServerSend("ChatRoomLeave", "");
@@ -473,7 +482,7 @@ export function initCommands_definitions() {
 			if (argv[0] === "cancel") {
 				LogDelete("KeyDeposit", "Cell", true);
 				respond(`You let ${Player.Name} have her keys back.`);
-				ChatRoomSendLocal(`${sender} let you have your keys back.`);
+				ChatRoomSendLocal(`${sender.toNicknamedString()} let you have your keys back.`);
 				return true;
 			}
 			let time = 0;
@@ -489,7 +498,10 @@ export function initCommands_definitions() {
 				respond(`Time needs to be between 1 minute and 1 week`);
 				return false;
 			}
-			ChatRoomActionMessage(`A nurse took all keys from ${Player.Name}, following ${sender}'s command. The keys will be deposited for ${formatTimeInterval(time)}.`);
+			ChatRoomActionMessage(`A nurse took all keys from TargetCharacterName, following SourceCharacter's (${sender.MemberNumber}) command. The keys will be deposited for ${formatTimeInterval(time)}.`, null, [
+				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+			]);
 			LogAdd("KeyDeposit", "Cell", CurrentTime + time, true);
 			return true;
 		},
@@ -570,7 +582,10 @@ export function initCommands_definitions() {
 			}
 			CharacterSetActivePose(Player, null);
 			const D = `(Two maids grab you and escort you to their quarters.  Another maid addresses you.)  ${sender.Name} sent you here to work.`;
-			ChatRoomActionMessage(`${Player.Name} gets grabbed by two maids and escorted to the maid quarters to serve drinks, following ${sender}'s command.`);
+			ChatRoomActionMessage(`TargetCharacterName gets grabbed by two maids and escorted to the maid quarters to serve drinks, following SourceCharacter's (${sender.MemberNumber}) command.`, null, [
+				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+			]);
 			ChatRoomClearAllElements();
 			ServerSend("ChatRoomLeave", "");
 			CommonSetScreen("Room", "MaidQuarters");
@@ -641,6 +656,80 @@ export function initCommands_definitions() {
 		autoCompleter: (argv) => {
 			if (argv.length === 1) {
 				return Command_pickAutocomplete(argv[0], ["forced", "ruined", "stop"]);
+			}
+			return [];
+		}
+	});
+
+	const emoticonExpressions: Record<string, string | null> = {
+		none: null,
+		afk: "Afk",
+		whisper: "Whisper",
+		sleep: "Sleep",
+		hearts: "Hearts",
+		sweatdrop: "Tear",
+		ear: "Hearing",
+		question: "Confusion",
+		exclamation: "Exclamation",
+		angry: "Annoyed",
+		book: "Read",
+		hand: "RaisedHand",
+		eye: "Spectator",
+		thumbsdown: "ThumbsDown",
+		thumbsup: "ThumbsUp",
+		rope: "LoveRope",
+		gag: "LoveGag",
+		lock: "LoveLock",
+		wardrobe: "Wardrobe",
+		game: "Gaming"
+	};
+
+	registerCommand("emoticon", {
+		name: "Emoticon",
+		helpDescription: `<${Object.keys(emoticonExpressions).join(" | ")}>`,
+		shortDescription: "Control PLAYER_NAME's emoticon",
+		longDescription:
+			`This command changes PLAYER_NAME's emoticon into the specified state, but the player can still manually change it.\n` +
+			`Usage:\n` +
+			`!emoticon HELP_DESCRIPTION`,
+		defaultLimit: ConditionsLimit.normal,
+		playerUsable: true,
+		trigger: (argv, sender, respond, state) => {
+			if (argv.length !== 1) {
+				respond(Command_fixExclamationMark(sender,
+					`!emoticon usage:\n` +
+					`!emoticon ${state.commandDefinition.helpDescription}`
+				));
+				return false;
+			}
+
+			// tied to rule "Prevent changing own emoticon"
+			const blockRule = RulesGetRuleState("block_changing_emoticon");
+			if (blockRule.isEnforced && sender.isPlayer()) {
+				blockRule.triggerAttempt();
+				return false;
+			} else if (blockRule.inEffect && sender.isPlayer()) {
+				blockRule.trigger();
+			}
+
+			const expression = emoticonExpressions[argv[0].toLowerCase()];
+			if (expression === undefined) {
+				respond(`Bad value: ${argv[0].toLowerCase()} is not one of '${Object.keys(emoticonExpressions).join("', '")}'`);
+				return false;
+			}
+			CharacterSetFacialExpression(Player, "Emoticon", expression);
+			if (!sender.isPlayer()) {
+				const text = "SENDER_NAME (SENDER_NUMBER) changed your emoticon.";
+				ChatRoomSendLocal(dictionaryProcess(text, {
+					SENDER_NAME: sender.Nickname,
+					SENDER_NUMBER: `${sender.MemberNumber}`
+				}), undefined, sender.MemberNumber);
+			}
+			return true;
+		},
+		autoCompleter: (argv) => {
+			if (argv.length === 1) {
+				return Command_pickAutocomplete(argv[0], Object.keys(emoticonExpressions));
 			}
 			return [];
 		}

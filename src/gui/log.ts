@@ -46,8 +46,6 @@ export class GuiLog extends GuiSubscreen {
 	}
 
 	private requestData() {
-		this.logData = null;
-		this.refreshScreen();
 		Promise.all([
 			this.character.getLogEntries(),
 			this.character.logGetAllowedActions()
@@ -57,10 +55,13 @@ export class GuiLog extends GuiSubscreen {
 			this.allowConfiguration = res[1].configure || this.character.isPlayer();
 			this.allowPraise = res[1].praise;
 			this.allowLeaveMessage = res[1].leaveMessage;
+			this.failed = false;
 			this.refreshScreen();
 		}, err => {
 			console.error(`BCX: Failed to get log data for ${this.character}`, err);
+			this.logData = null;
 			this.failed = true;
+			this.refreshScreen();
 		});
 	}
 
@@ -111,10 +112,13 @@ export class GuiLog extends GuiSubscreen {
 			DrawText("Filter:", 130, 215, "Black");
 			positionElement(this.filterInput, 550, 210, 600, 64);
 
-			//reset button
+			//reset and delete all button
 			if (this.filterInput.value) {
 				MainCanvas.textAlign = "center";
 				DrawButton(870, 182, 64, 64, "X", "White");
+				if (this.allowDeletion) {
+					DrawButton(1270, 182, 420, 64, "Delete all filtered log entries", "White");
+				}
 			}
 
 			for (let off = 0; off < PER_PAGE_COUNT; off++) {
@@ -220,6 +224,12 @@ export class GuiLog extends GuiSubscreen {
 			if (MouseIn(870, 182, 64, 64)) {
 				this.filterInput.value = "";
 				this.refreshScreen();
+			}
+
+			// Clear all filtered logs button
+			if (MouseIn(1270, 182, 420, 64) && this.allowDeletion) {
+				this.character.logMessageDelete(this.logEntries.map(e => e[0]));
+				return;
 			}
 
 			for (let off = 0; off < PER_PAGE_COUNT; off++) {

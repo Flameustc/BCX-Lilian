@@ -1,5 +1,7 @@
 import { icon_Typing_star, icon_Typing_base, icon_Typing_dot } from "./resources";
 import { BCX_setTimeout } from "./BCXContext";
+import { getChatroomCharacter } from "./characters";
+import { RelationshipsGetNickname } from "./modules/relationships";
 
 import bcModSDK from "bondage-club-mod-sdk";
 
@@ -18,7 +20,10 @@ const GROUP_NAME_OVERRIDES: Record<string, string> = {
 	"ItemMouth": "Mouth (1)",
 	"ItemMouth2": "Mouth (2)",
 	"ItemMouth3": "Mouth (3)",
-	"HairAccessory2": "Ears Accessory"
+	"HairAccessory2": "Ears Accessory",
+	"Height": "Character Height",
+	"Mouth": "Mouth Style",
+	"Pussy": "Pussy Style"
 };
 
 export let allowMode: boolean = false;
@@ -101,7 +106,7 @@ export function InfoBeep(msg: string, timer: number = 3000) {
 	};
 }
 
-export function ChatRoomActionMessage(msg: string, target: null | number = null) {
+export function ChatRoomActionMessage(msg: string, target: null | number = null, dictionary: ChatMessageDictionaryEntry[] = []) {
 	if (!msg) return;
 	ServerSend("ChatRoomChat", {
 		Content: "Beep",
@@ -109,11 +114,11 @@ export function ChatRoomActionMessage(msg: string, target: null | number = null)
 		Target: target,
 		Dictionary: [
 			{ Tag: "Beep", Text: "msg" },
-			{ Tag: "发送私聊", Text: "msg" },
 			{ Tag: "Biep", Text: "msg" },
 			{ Tag: "Sonner", Text: "msg" },
 			{ Tag: "发送私聊", Text: "msg" },
-			{ Tag: "msg", Text: msg }
+			{ Tag: "msg", Text: msg },
+			...dictionary
 		]
 	});
 }
@@ -288,15 +293,29 @@ export function isCloth(item: Item | Asset | AssetGroup, allowCosplay: boolean =
 	return group.Category === "Appearance" && group.AllowNone && group.Clothing && (allowCosplay || !group.BodyCosplay);
 }
 
-export function isBind(item: Item | Asset | AssetGroup): boolean {
+export function isCosplay(item: Item | Asset | AssetGroup): boolean {
+	const group = smartGetAssetGroup(item);
+	return group.Category === "Appearance" && group.AllowNone && group.Clothing && group.BodyCosplay;
+}
+
+export function isBody(item: Item | Asset | AssetGroup): boolean {
+	const group = smartGetAssetGroup(item);
+	return group.Category === "Appearance" && !group.Clothing;
+}
+
+export function isBind(item: Item | Asset | AssetGroup, excludeSlots: AssetGroupName[] = ["ItemNeck", "ItemNeckAccessories", "ItemNeckRestraints"]): boolean {
 	const group = smartGetAssetGroup(item);
 	if (group.Category !== "Item" || group.BodyCosplay) return false;
-	return !["ItemNeck", "ItemNeckAccessories", "ItemNeckRestraints"].includes(group.Name);
+	return !excludeSlots.includes(group.Name);
 }
 
 export function getCharacterName(memberNumber: number, defaultText: string): string;
 export function getCharacterName(memberNumber: number, defaultText: string | null): string | null;
 export function getCharacterName(memberNumber: number, defaultText: string | null = null): string | null {
+	const c = getChatroomCharacter(memberNumber);
+	if (c) {
+		return c.Name;
+	}
 	if (Player.MemberNumber === memberNumber) {
 		return Player.Name;
 	}
@@ -318,6 +337,18 @@ export function getCharacterName(memberNumber: number, defaultText: string | nul
 	return defaultText;
 }
 
+export function getCharacterNickname(memberNumber: number, defaultText: string): string;
+export function getCharacterNickname(memberNumber: number, defaultText: string | null): string | null;
+export function getCharacterNickname(memberNumber: number, defaultText: string | null = null): string | null {
+	const relNickname = RelationshipsGetNickname(memberNumber);
+	if (relNickname != null)
+		return relNickname;
+	const c = getChatroomCharacter(memberNumber);
+	if (c)
+		return c.Nickname;
+	return getCharacterName(memberNumber, defaultText);
+}
+
 export function itemColorsEquals(color1: null | undefined | string | string[], color2: null | undefined | string | string[]): boolean {
 	if (color1 == null) {
 		color1 = "Default";
@@ -335,12 +366,16 @@ export function itemColorsEquals(color1: null | undefined | string | string[], c
 }
 
 export function showHelp(helpText: string) {
-	MainCanvas.fillStyle = "#ffff88";
-	MainCanvas.fillRect(1000, 190, 800, 600);
-	MainCanvas.strokeStyle = "Black";
-	MainCanvas.strokeRect(1000, 190, 800, 600);
-	MainCanvas.textAlign = "left";
-	DrawTextWrap(helpText, 1020 - 760 / 2, 210, 760, 560, "black");
+	DrawHoverElements.push(() => {
+		MainCanvas.save();
+		MainCanvas.fillStyle = "#ffff88";
+		MainCanvas.fillRect(1000, 190, 800, 600);
+		MainCanvas.strokeStyle = "Black";
+		MainCanvas.strokeRect(1000, 190, 800, 600);
+		MainCanvas.textAlign = "left";
+		DrawTextWrap(helpText, 1020 - 760 / 2, 210, 760, 560, "black");
+		MainCanvas.restore();
+	});
 }
 
 interface RoomInfo {
@@ -434,11 +469,15 @@ export function drawIcon(
 	ctx.translate(x, y);
 	ctx.scale(width / baseSize, height / baseSize);
 	ctx.fillStyle = fillColor;
-	ctx.strokeStyle = strokeColor;
+	if (strokeColor) {
+		ctx.strokeStyle = strokeColor;
+	}
 	ctx.lineWidth = lineWidth;
 	const p = new Path2D(icon);
 	ctx.fill(p);
-	ctx.stroke(p);
+	if (strokeColor) {
+		ctx.stroke(p);
+	}
 	ctx.restore();
 }
 

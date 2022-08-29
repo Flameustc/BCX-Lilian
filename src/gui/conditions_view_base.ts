@@ -2,7 +2,7 @@ import { ChatroomCharacter } from "../characters";
 import { setSubscreen } from "../modules/gui";
 import { GuiMainMenu } from "./mainmenu";
 import { GuiSubscreen } from "./subscreen";
-import { clamp, formatTimeInterval } from "../utils";
+import { clamp, createInputElement, formatTimeInterval, positionElement } from "../utils";
 import { DrawImageEx } from "../utilsClub";
 import { ConditionsLimit } from "../constants";
 
@@ -17,6 +17,9 @@ export interface ConditionEntry<CAT extends ConditionsCategories, ExtraData> {
 	extra: ExtraData
 }
 
+let alphabeticalSort: boolean = false;
+let activeSort: boolean = false;
+
 export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraData> extends GuiSubscreen {
 
 	readonly character: ChatroomCharacter;
@@ -30,6 +33,8 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 
 	protected showHelp: boolean = false;
 
+	private filterInput = createInputElement("text", 30);
+
 	constructor(character: ChatroomCharacter,
 		conditionCategory: CAT
 	) {
@@ -37,6 +42,9 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 		this.character = character;
 		this.conditionCategory = conditionCategory;
 		this.conditionCategorySingular = conditionCategory.slice(0, -1);
+		this.filterInput.addEventListener("input", ev => {
+			this.onDataChange();
+		});
 	}
 
 	Load() {
@@ -50,17 +58,17 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 	}
 
 	private requestData() {
-		this.conditionCategoryData = null;
-		this.failed = false;
-		this.onDataChange();
 		this.character.conditionsGetByCategory(this.conditionCategory).then(res => {
 			if (!this.active)
 				return;
 			this.conditionCategoryData = res;
+			this.failed = false;
 			this.onDataChange();
 		}, err => {
 			console.error(`BCX: Failed to get condition info for ${this.conditionCategory} from ${this.character}`, err);
+			this.conditionCategoryData = null;
 			this.failed = true;
+			this.onDataChange();
 		});
 	}
 
@@ -69,8 +77,16 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 
 		this.conditionEntries = [];
 
-		if (this.conditionCategoryData === null)
+		if (this.conditionCategoryData === null) {
+			this.filterInput.remove();
 			return;
+		}
+
+		if (!this.filterInput.parentElement) {
+			document.body.appendChild(this.filterInput);
+		}
+
+		const filter = this.filterInput.value.trim().toLocaleLowerCase().split(" ").filter(Boolean);
 
 		for (const [condition, data] of Object.entries<ConditionsConditionPublicData<CAT>>(this.conditionCategoryData.conditions)) {
 			const res = this.loadCondition(condition as ConditionsCategoryKeys[CAT], data);
@@ -78,6 +94,11 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 				continue;
 
 			const access = [this.conditionCategoryData.access_normal, this.conditionCategoryData.access_limited, false][this.conditionCategoryData.limits[condition as ConditionsCategoryKeys[CAT]] ?? ConditionsLimit.normal];
+
+			if (filter.some(i =>
+				!condition.toLocaleLowerCase().includes(i) &&
+				!res[0].toLocaleLowerCase().includes(i)
+			)) continue;
 
 			this.conditionEntries.push({
 				condition,
@@ -88,16 +109,32 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 			});
 		}
 
-		this.conditionEntries.sort((a, b) => (!a.data.favorite && b.data.favorite) ? 1 : ((a.data.favorite && !b.data.favorite) ? -1 : 0));
+		this.conditionEntries = this.sortEntries(this.conditionEntries);
 
 		this.page = clamp(this.page, 0, Math.ceil(this.conditionEntries.length / PER_PAGE_COUNT));
+	}
+
+	protected sortEntries(entries: ConditionEntry<CAT, ExtraData>[]): ConditionEntry<CAT, ExtraData>[] {
+		entries.sort((a, b) => (!a.data.favorite && b.data.favorite) ? 1 : ((a.data.favorite && !b.data.favorite) ? -1 : 0));
+		if (alphabeticalSort) {
+			entries.sort((a, b) => a.displayName.localeCompare(b.displayName));
+		}
+		if (activeSort) {
+			entries.sort((a, b) => (
+				(
+					(b.data.active ? 1 : 0) -
+					(a.data.active ? 1 : 0)
+				)
+			));
+		}
+		return entries;
 	}
 
 	Run(): boolean {
 		MainCanvas.textAlign = "left";
 		DrawText(`- ${this.headerText()} -`, 125, 125, "Black", "Gray");
 		MainCanvas.textAlign = "center";
-		DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png", "BCX main menu");
+		DrawButton(1815, 75, 90, 90, "", "White", "Icons/Exit.png");
 		DrawButton(1815, 190, 90, 90, "", "White", "Icons/Question.png");
 
 		if (this.conditionCategoryData === null) {
@@ -184,17 +221,67 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 
 		MainCanvas.textAlign = "center";
 
-		DrawButton(968, 820, 605, 90, "", this.conditionCategoryData.access_configure ? "White" : "#ddd", "",
-			this.conditionCategoryData.access_configure ? `Existing ${this.conditionCategory} set to global ${this.conditionCategory} config are also changed` : "You have no permission to use this", !this.conditionCategoryData.access_configure);
-		DrawText(`Change global ${this.conditionCategory} config`, 968 + 680 / 2, 865, "Black", "");
+		// activate/deactivate buttons
+		const accessFull = this.conditionCategoryData.access_normal && this.conditionCategoryData.access_limited;
+		DrawButton(678, 820, 170, 50, "", accessFull ? "White" : "#ddd", "",
+			accessFull ? `Switch all added ${this.conditionCategory} to active` : "You have no permission to use this", !accessFull);
+		DrawTextFit(`Activate all`, 680 + 170 / 2, 820 + 25, 145, "Black", "");
+		DrawButton(678, 885, 170, 46, "", accessFull ? "White" : "#ddd", "",
+			accessFull ? `Activate only global config ${this.conditionCategory}` : "You have no permission to use this", !accessFull);
+		DrawTextFit(`A. only`, 684 + 115 / 2, 885 + 25, 90, "Black", "");
 		MainCanvas.beginPath();
-		MainCanvas.ellipse(968 + 10 + 35, 820 + 44, 34, 34, 360, 0, 360);
+		MainCanvas.ellipse(675 + 120 + 22, 885 + 23, 21, 21, 360, 0, 360);
 		MainCanvas.fillStyle = "#0052A3";
 		MainCanvas.fill();
-		DrawImageEx("Icons/General.png", 968 + 10, 820 + 10, {
+		DrawImageEx("Icons/General.png", 675 + 120, 885 + 1, {
+			Height: 44,
+			Width: 44
+		});
+
+		DrawButton(870, 820, 170, 50, "Deactivate all", accessFull ? "White" : "#ddd", "",
+			accessFull ? `Switch all added ${this.conditionCategory} to inactive` : "You have no permission to use this", !accessFull);
+		DrawButton(870, 885, 170, 46, "", accessFull ? "White" : "#ddd", "",
+			accessFull ? `Deactivate only global config ${this.conditionCategory}` : "You have no permission to use this", !accessFull);
+		DrawTextFit(`D. only`, 876 + 115 / 2, 885 + 25, 90, "Black", "");
+		MainCanvas.beginPath();
+		MainCanvas.ellipse(868 + 120 + 22, 885 + 23, 21, 21, 360, 0, 360);
+		MainCanvas.fillStyle = "#0052A3";
+		MainCanvas.fill();
+		DrawImageEx("Icons/General.png", 868 + 120, 885 + 1, {
+			Height: 44,
+			Width: 44
+		});
+
+		// change global config button
+		DrawButton(1068, 820, 505, 90, "", this.conditionCategoryData.access_configure ? "White" : "#ddd", "",
+			this.conditionCategoryData.access_configure ? `Existing ${this.conditionCategory} set to global ${this.conditionCategory} config are also changed` : "You have no permission to use this", !this.conditionCategoryData.access_configure);
+		DrawTextFit(`Change global ${this.conditionCategory} config`, 1018 + 680 / 2, 865, 400, "Black", "");
+		MainCanvas.beginPath();
+		MainCanvas.ellipse(1068 + 10 + 35, 820 + 44, 34, 34, 360, 0, 360);
+		MainCanvas.fillStyle = "#0052A3";
+		MainCanvas.fill();
+		DrawImageEx("Icons/General.png", 1068 + 10, 820 + 10, {
 			Height: 70,
 			Width: 70
 		});
+
+		// filter
+		MainCanvas.textAlign = "left";
+		positionElement(this.filterInput, 1200, 110, 500, 64);
+
+		// reset button
+		MainCanvas.textAlign = "center";
+		if (this.filterInput.value) {
+			DrawButton(1470, 82, 64, 64, "X", "White");
+		}
+
+		// sort toggle
+		DrawButton(1583, 82, 64, 64, "", "White");
+		DrawImageEx("Icons/Accept.png", 1583 + 3, 82 + 3, { Alpha: activeSort ? 1 : 0.2, Width: 58, Height: 58 });
+
+		// A-Z toggle
+		DrawButton(1683, 82, 64, 64, "", "White");
+		DrawTextFit("A-Z", 1683 + 32, 82 + 32 + 1, 64 - 4, alphabeticalSort ? "black" : "#bbb");
 
 		// Pagination
 		const totalPages = Math.ceil(this.conditionEntries.length / PER_PAGE_COUNT);
@@ -244,9 +331,74 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 
 		}
 
-		if (this.conditionCategoryData.access_configure && MouseIn(968, 820, 605, 90)) {
+		// activate/deactivate buttons
+		const accessFull = this.conditionCategoryData.access_normal && this.conditionCategoryData.access_limited;
+		if (accessFull && MouseIn(678, 820, 170, 50)) {
+			this.character.conditionUpdateMultiple(
+				this.conditionCategory,
+				Object.entries<ConditionsConditionPublicData<CAT>>(this.conditionCategoryData.conditions)
+					.filter(([c, d]) => !d.active)
+					.map(([c, d]) => c as ConditionsCategoryKeys[CAT]),
+				{ active: true }
+			);
+			return true;
+		}
+
+		if (accessFull && MouseIn(678, 885, 170, 46)) {
+			this.character.conditionUpdateMultiple(
+				this.conditionCategory,
+				Object.entries<ConditionsConditionPublicData<CAT>>(this.conditionCategoryData.conditions)
+					.filter(([c, d]) => !d.active && d.requirements === null)
+					.map(([c, d]) => c as ConditionsCategoryKeys[CAT]),
+				{ active: true }
+			);
+			return true;
+		}
+
+		if (accessFull && MouseIn(870, 820, 170, 50)) {
+			this.character.conditionUpdateMultiple(
+				this.conditionCategory,
+				Object.entries<ConditionsConditionPublicData<CAT>>(this.conditionCategoryData.conditions)
+					.filter(([c, d]) => d.active)
+					.map(([c, d]) => c as ConditionsCategoryKeys[CAT]),
+				{ active: false }
+			);
+			return true;
+		}
+
+		if (accessFull && MouseIn(870, 885, 170, 46)) {
+			this.character.conditionUpdateMultiple(
+				this.conditionCategory,
+				Object.entries<ConditionsConditionPublicData<CAT>>(this.conditionCategoryData.conditions)
+					.filter(([c, d]) => d.active && d.requirements === null)
+					.map(([c, d]) => c as ConditionsCategoryKeys[CAT]),
+				{ active: false }
+			);
+			return true;
+		}
+
+		// change global config button
+		if (this.conditionCategoryData.access_configure && MouseIn(1068, 820, 505, 90)) {
 			this.openGlobalConfig();
 			return true;
+		}
+
+		// reset button
+		if (MouseIn(1470, 82, 64, 64)) {
+			this.filterInput.value = "";
+			this.onDataChange();
+		}
+
+		// sort toggle
+		if (MouseIn(1583, 82, 64, 64)) {
+			activeSort = !activeSort;
+			this.onDataChange();
+		}
+
+		// A-Z toggle
+		if (MouseIn(1683, 82, 64, 64)) {
+			alphabeticalSort = !alphabeticalSort;
+			this.onDataChange();
 		}
 
 		// Pagination
@@ -269,6 +421,10 @@ export abstract class GuiConditionView<CAT extends ConditionsCategories, ExtraDa
 
 	Exit() {
 		setSubscreen(new GuiMainMenu(this.character));
+	}
+
+	Unload() {
+		this.filterInput.remove();
 	}
 
 	protected abstract removeLabel: string;

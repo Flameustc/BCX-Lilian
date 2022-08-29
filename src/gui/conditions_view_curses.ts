@@ -9,7 +9,7 @@ import { GuiCursesAdd } from "./curses_add";
 import { Views, HELP_TEXTS } from "../helpTexts";
 
 interface CurseEntry {
-	type: "clothing" | "item";
+	type: "body" | "clothing" | "item";
 	propertiesCursed?: boolean;
 	propertiesCursedShow?: boolean;
 }
@@ -26,11 +26,11 @@ export class GuiConditionViewCurses extends GuiConditionView<"curses", CurseEntr
 		if (super.Run() || this.conditionCategoryData === null)
 			return true;
 
-		DrawButton(120, 820, 384, 90, "Add new curse", "White", "",
+		DrawButton(120, 820, 250, 90, "Add new curse", "White", "",
 			"Place new curses on body, items or clothes");
 
 		const access = this.conditionCategoryData.access_normal || this.conditionCategoryData.access_limited;
-		DrawButton(536, 820, 400, 90, "Lift all curses", access ? "White" : "#ddd", "",
+		DrawButton(400, 820, 250, 90, "Lift all curses", access ? "White" : "#ddd", "",
 			access ? "Remove all curses on body, items or clothes" : "You have no permission to use this", !access);
 
 		// help text
@@ -44,13 +44,13 @@ export class GuiConditionViewCurses extends GuiConditionView<"curses", CurseEntr
 		if (super.Click() || this.conditionCategoryData === null)
 			return true;
 
-		if (MouseIn(120, 820, 384, 90)) {
+		if (MouseIn(120, 820, 250, 90)) {
 			setSubscreen(new GuiCursesAdd(this.character));
 			return true;
 		}
 
 		const access = this.conditionCategoryData.access_normal || this.conditionCategoryData.access_limited;
-		if (access && MouseIn(536, 820, 400, 90)) {
+		if (access && MouseIn(400, 820, 250, 90)) {
 			this.character.curseLiftAll();
 			return true;
 		}
@@ -61,7 +61,7 @@ export class GuiConditionViewCurses extends GuiConditionView<"curses", CurseEntr
 	protected removeLabel: string = "Lift curse";
 
 	protected drawCategoryImage(X: number, Y: number, data: dataEntry): void {
-		DrawImageEx(data.extra.type === "clothing" ? "Icons/Dress.png" : "Assets/Female3DCG/ItemArms/Preview/NylonRope.png", X + 6, Y + 6, {
+		DrawImageEx(data.extra.type === "body" ? "Icons/Character.png" : data.extra.type === "clothing" ? "Icons/Dress.png" : "Assets/Female3DCG/ItemArms/Preview/NylonRope.png", X + 6, Y + 6, {
 			Height: 50,
 			Width: 50
 		});
@@ -110,12 +110,12 @@ export class GuiConditionViewCurses extends GuiConditionView<"curses", CurseEntr
 		}
 		if (data.data === null) {
 			return [`Blocked: ${getVisibleGroupName(group)}`, {
-				type: group.Clothing ? "clothing" : "item"
+				type: group.Category === "Item" ? "item" : group.Clothing ? "clothing" : "body"
 			}];
 		} else {
 			const item = AssetGet(this.character.Character.AssetFamily, condition, data.data.Name);
 			return [`${item?.Description ?? data.data.Name} (${getVisibleGroupName(group)})`, {
-				type: group.Clothing ? "clothing" : "item",
+				type: group.Category === "Item" ? "item" : group.Clothing ? "clothing" : "body",
 				propertiesCursed: data.data.curseProperties,
 				propertiesCursedShow: data.data.curseProperties || !item || curseAllowItemCurseProperty(item)
 			}];

@@ -6,17 +6,13 @@ import { isObject, uuidv4 } from "../utils";
 import { firstTimeInit } from "./storage";
 import { ModuleInitPhase } from "../constants";
 import { BCX_setTimeout } from "../BCXContext";
+import cloneDeep from "lodash-es/cloneDeep";
 
 export const hiddenMessageHandlers: Map<keyof BCX_messages, (sender: number, message: any) => void> = new Map();
 export const hiddenBeepHandlers: Map<keyof BCX_beeps, (sender: number, message: any) => void> = new Map();
 
-export type queryResolveFunction<T extends keyof BCX_queries> = {
-	(ok: true, data: BCX_queries[T][1]): void;
-	(ok: false, error?: any): void;
-};
-
 export const queryHandlers: {
-	[K in keyof BCX_queries]?: (sender: ChatroomCharacter, resolve: queryResolveFunction<K>, data: BCX_queries[K][0]) => void;
+	[K in keyof BCX_queries]?: (sender: ChatroomCharacter, data: BCX_queries[K][0]) => BCX_queries[K][1] | undefined;
 } = {};
 
 export const changeHandlers: ((source: number) => void)[] = [];
@@ -70,13 +66,50 @@ export function sendQuery<T extends keyof BCX_queries>(type: T, data: BCX_querie
 		};
 		pendingQueries.set(id, info);
 
-		sendHiddenMessage("query", {
-			id,
-			query: type,
-			data
-		}, target);
+		const playerCharacter = getPlayerCharacter();
+
+		if (target === playerCharacter.MemberNumber) {
+			handleQuery(playerCharacter, cloneDeep({
+				id,
+				query: type,
+				data
+			}))
+				.then(result => {
+					handleQueryAnswer(playerCharacter.MemberNumber, result);
+				}, error => {
+					handleQueryAnswer(playerCharacter.MemberNumber, {
+						id,
+						ok: false,
+						data: error
+					});
+				});
+		} else {
+			sendHiddenMessage("query", {
+				id,
+				query: type,
+				data
+			}, target);
+		}
 
 	});
+}
+
+async function handleQuery(sender: ChatroomCharacter, message: BCX_message_query): Promise<BCX_message_queryAnswer> {
+	const handler = queryHandlers[message.query] as (sender: ChatroomCharacter, data: any) => any;
+	if (!handler) {
+		console.warn("BCX: Query no handler", sender, message);
+		return {
+			id: message.id,
+			ok: false
+		};
+	}
+
+	const result = await handler(sender, message.data);
+	return {
+		id: message.id,
+		ok: result !== undefined,
+		data: result
+	};
 }
 
 hiddenMessageHandlers.set("query", (sender, message: BCX_message_query) => {
@@ -93,36 +126,22 @@ hiddenMessageHandlers.set("query", (sender, message: BCX_message_query) => {
 		return sendHiddenMessage("queryAnswer", {
 			id: message.id,
 			ok: false
-		});
-	}
-
-	const handler = queryHandlers[message.query] as (sender: ChatroomCharacter, resolve: queryResolveFunction<keyof BCX_queries>, data: any) => void;
-	if (!handler) {
-		console.warn("BCX: Query no handler", sender, message);
-		return sendHiddenMessage("queryAnswer", {
-			id: message.id,
-			ok: false
-		});
-	}
-
-	handler(character, (ok, data) => {
-		sendHiddenMessage("queryAnswer", {
-			id: message.id,
-			ok,
-			data
 		}, sender);
-	}, message.data);
+	}
+
+	handleQuery(character, message)
+		.then((result) => {
+			sendHiddenMessage("queryAnswer", result, sender);
+		}, error => {
+			sendHiddenMessage("queryAnswer", {
+				id: message.id,
+				ok: false,
+				data: String(error)
+			}, sender);
+		});
 });
 
-hiddenMessageHandlers.set("queryAnswer", (sender, message: BCX_message_queryAnswer) => {
-	if (!isObject(message) ||
-		typeof message.id !== "string" ||
-		typeof message.ok !== "boolean"
-	) {
-		console.warn(`BCX: Invalid queryAnswer`, sender, message);
-		return;
-	}
-
+function handleQueryAnswer(sender: number, message: BCX_message_queryAnswer): void {
 	const info = pendingQueries.get(message.id);
 	if (!info) {
 		console.warn(`BCX: Response to unknown query`, sender, message);
@@ -142,6 +161,18 @@ hiddenMessageHandlers.set("queryAnswer", (sender, message: BCX_message_queryAnsw
 	} else {
 		info.reject(message.data);
 	}
+}
+
+hiddenMessageHandlers.set("queryAnswer", (sender, message: BCX_message_queryAnswer) => {
+	if (!isObject(message) ||
+		typeof message.id !== "string" ||
+		typeof message.ok !== "boolean"
+	) {
+		console.warn(`BCX: Invalid queryAnswer`, sender, message);
+		return;
+	}
+
+	handleQueryAnswer(sender, message);
 });
 
 hiddenMessageHandlers.set("somethingChanged", (sender) => {

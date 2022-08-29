@@ -8,6 +8,8 @@ interface Window {
 
 declare const LZString: import("lz-string").LZStringStatic;
 
+type Satisfies<T extends U, U> = T;
+
 interface BCXVersion {
 	major: number;
 	minor: number;
@@ -15,6 +17,8 @@ interface BCXVersion {
 	extra?: string;
 	dev?: boolean;
 }
+
+type BCXSupporterType = undefined | "supporter" | "developer";
 
 // Player.OnlineSettings.BCX?: string;
 
@@ -47,7 +51,12 @@ type BCX_Permissions =
 	| "commands_normal"
 	| "commands_limited"
 	| "commands_change_limits"
-	| "misc_test";
+	| "exportimport_export"
+	| "relationships_view_all"
+	| "relationships_modify_self"
+	| "relationships_modify_others"
+	| "misc_cheat_allowactivities"
+	| "misc_wardrobe_item_import";
 
 type PermissionsBundle = Record<string, [boolean, number]>;
 
@@ -74,7 +83,8 @@ type BCX_LogCategory =
 	| "had_orgasm"
 	| "entered_public_room"
 	| "entered_private_room"
-	| "authority_roles_change";
+	| "authority_roles_change"
+	| "relationships_change";
 
 interface CursedItemInfo {
 	Name: string;
@@ -82,6 +92,7 @@ interface CursedItemInfo {
 	Color?: string | string[];
 	Difficulty?: number;
 	Property?: ItemProperties;
+	Craft?: CraftedItemProperties;
 	itemRemove?: true | undefined;
 }
 
@@ -161,13 +172,16 @@ interface ConditionsConditionData<category extends ConditionsCategories = Condit
 	addedBy?: number;
 }
 
-interface ConditionsConditionPublicData<category extends ConditionsCategories = ConditionsCategories> {
+interface ConditionsConditionPublicDataBase {
 	active: boolean;
-	data: ConditionsCategorySpecificPublicData[category];
 	timer: number | null;
 	timerRemove: boolean;
 	requirements: ConditionsConditionRequirements | null;
 	favorite: boolean;
+}
+
+interface ConditionsConditionPublicData<category extends ConditionsCategories = ConditionsCategories> extends ConditionsConditionPublicDataBase {
+	data: ConditionsCategorySpecificPublicData[category];
 	addedBy?: number;
 }
 
@@ -235,12 +249,15 @@ type BCX_Rule =
 	| "block_using_ggts"
 	| "block_club_slave_work"
 	| "block_using_unowned_items"
+	| "block_changing_emoticon"
+	| "block_ui_icons_names"
 	| "alt_restrict_hearing"
 	| "alt_restrict_sight"
 	| "alt_eyes_fullblind"
 	| "alt_field_of_vision"
 	| "alt_blindfolds_fullblind"
 	| "alt_always_slow"
+	| "alt_set_leave_slowing"
 	| "alt_control_orgasms"
 	| "alt_control_orgasms_mod"
 	| "alt_secret_orgasms"
@@ -248,12 +265,14 @@ type BCX_Rule =
 	| "alt_room_admin_transfer"
 	| "alt_room_admin_limit"
 	| "alt_set_profile_description"
+	| "alt_set_nickname"
 	| "alt_force_suitcase_game"
 	| "alt_hearing_whitelist"
 	| "alt_seeing_whitelist"
 	| "alt_restrict_leashability"
 	| "alt_hide_friends"
 	| "alt_forced_summoning"
+	| "alt_allow_changing_appearance"
 	| "rc_club_owner"
 	| "rc_lover_new"
 	| "rc_lover_leave"
@@ -310,6 +329,8 @@ type BCX_Rule =
 	| "setting_leashed_roomchange"
 	| "setting_room_rejoin"
 	| "setting_plug_vibe_events"
+	| "setting_allow_tint_effects"
+	| "setting_allow_blur_effects"
 	| "setting_upsidedown_view"
 	| "setting_limited_items"
 	;
@@ -324,6 +345,9 @@ type RuleCustomData = {
 	block_leaving_room: {
 		minimumRole: import("./modules/authority").AccessLevel;
 	},
+	block_freeing_self: {
+		allowEasyItemsToggle: boolean;
+	},
 	block_tying_others: {
 		onlyMoreDominantsToggle: boolean;
 	},
@@ -333,6 +357,10 @@ type RuleCustomData = {
 	},
 	block_blacklisting: {
 		minimumRole: import("./modules/authority").AccessLevel;
+	},
+	block_ui_icons_names: {
+		hidingStrength: string;
+		alsoHideEmoticons: boolean;
 	},
 	alt_restrict_hearing: {
 		deafeningStrength: string;
@@ -344,6 +372,9 @@ type RuleCustomData = {
 		affectPlayer: boolean;
 		hideNames: boolean;
 	},
+	alt_set_leave_slowing: {
+		leaveTime: number;
+	}
 	alt_field_of_vision: {
 		affectPlayer: boolean;
 		hideNames: boolean;
@@ -366,6 +397,9 @@ type RuleCustomData = {
 	alt_set_profile_description: {
 		playersProfileDescription: string;
 	},
+	alt_set_nickname: {
+		nickname: string;
+	},
 	alt_hearing_whitelist: {
 		whitelistedMembers: number[];
 		ignoreGaggedMembersToggle: boolean;
@@ -383,6 +417,9 @@ type RuleCustomData = {
 		allowedMembers: number[];
 		summoningText: string;
 		summonTime: number;
+	},
+	alt_allow_changing_appearance: {
+		minimumRole: import("./modules/authority").AccessLevel;
 	},
 	speech_specific_sound: {
 		soundWhitelist: string[];
@@ -443,6 +480,7 @@ type RuleCustomData = {
 	speech_partial_hearing: {
 		alwaysUnderstandableWords: string[];
 		randomUnderstanding: boolean;
+		affectGaggedMembersToggle: boolean;
 	},
 	other_forbid_afk: {
 		minutesBeforeAfk: number;
@@ -530,6 +568,14 @@ type RuleCustomData = {
 		value: boolean;
 		restore: boolean;
 	},
+	setting_allow_tint_effects: {
+		value: boolean;
+		restore: boolean;
+	},
+	setting_allow_blur_effects: {
+		value: boolean;
+		restore: boolean;
+	},
 	setting_upsidedown_view: {
 		value: boolean;
 		restore: boolean;
@@ -553,6 +599,8 @@ type RuleInternalData = {
 	setting_relog_keeps_restraints: boolean;
 	setting_leashed_roomchange: boolean;
 	setting_plug_vibe_events: boolean;
+	setting_allow_tint_effects: boolean;
+	setting_allow_blur_effects: boolean;
 	setting_upsidedown_view: boolean;
 	other_log_money: number;
 	other_track_BCX_activation: number;
@@ -578,9 +626,14 @@ type RuleCustomDataTypesOptions = {
 	memberNumberList?: {
 		pageSize?: number;
 	};
+	number?: {
+		min?: number;
+		max?: number;
+	};
 	string?: RegExp;
 	stringList?: {
 		validate?: RegExp;
+		pageSize?: number;
 	}
 };
 
@@ -603,6 +656,7 @@ interface RuleDisplayDefinition<ID extends BCX_Rule = BCX_Rule> {
 	type: import("./modules/rules").RuleType;
 	shortDescription?: string;
 	longDescription: string;
+	keywords?: string[];
 	/** Texts to use for when rule is broken, set to empty string to disable */
 	triggerTexts?: {
 		/** When rule is broken */
@@ -654,6 +708,7 @@ type BCX_Command =
 	| "timeleft"
 	| "servedrinks"
 	| "orgasm"
+	| "emoticon"
 	;
 
 interface CommandDefinition<ID extends BCX_Command = BCX_Command> extends CommandDisplayDefinition {
@@ -709,6 +764,8 @@ interface ModStorage {
 	chatShouldDisplayFirstTimeHelp?: true;
 	/** Toggle, if friendlist autorefresh is enabled */
 	FLAutorefresh?: true;
+	/** Toggle, if player chose to hide the supporter status */
+	supporterHidden?: true;
 	cheats: import("./constants").MiscCheat[];
 	disabledModules: import("./constants").ModuleCategory[];
 	permissions: PermissionsBundle;
@@ -727,4 +784,6 @@ interface ModStorage {
 	conditions: ConditionsStorage;
 	roomTemplates: (RoomTemplate | null)[];
 	roomSearchAutoFill: string;
+	relationships: import("./modules/relationships").RelationshipData[];
+	wardrobeDefaultExtended: boolean;
 }

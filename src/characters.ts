@@ -1,17 +1,16 @@
 import { VERSION } from "./config";
 import { ConditionsLimit, defaultBCXEffects, ModuleCategory, TOGGLEABLE_MODULES } from "./constants";
-import { AccessLevel, checkPermissionAccess, editRole, getPermissionDataFromBundle, getPlayerPermissionSettings, getPlayerRoleData, PermissionData, setPermissionMinAccess, setPermissionSelfAccess } from "./modules/authority";
-import { ConditionsCategoryUpdate, ConditionsGetCategoryEnabled, ConditionsGetCategoryPublicData, ConditionsSetLimit, ConditionsUpdate, guard_ConditionsCategoryPublicData } from "./modules/conditions";
-import { curseItem, curseLift, curseBatch, curseLiftAll } from "./modules/curses";
-import { getVisibleLogEntries, LogAccessLevel, logClear, LogConfig, logConfigSet, LogEntry, logGetAllowedActions, logGetConfig, logMessageDelete, logPraise, LOG_CONFIG_NAMES } from "./modules/log";
+import { AccessLevel, getPermissionDataFromBundle, PermissionData } from "./modules/authority";
+import { guard_ConditionsCategoryPublicData } from "./modules/conditions";
+import { LogAccessLevel, LogConfig, LogEntry, LOG_CONFIG_NAMES } from "./modules/log";
 import { sendQuery } from "./modules/messaging";
-import { getDisabledModules } from "./modules/presets";
-import { RulesCreate, RulesDelete } from "./modules/rules";
 import { isObject } from "./utils";
 import { BaseModule } from "./modules/_BaseModule";
 import { hookFunction } from "./patching";
 import { announceSelf } from "./modules/chatroom";
 import { BCX_setInterval } from "./BCXContext";
+import { otherSupporterStatus, supporterStatus } from "./modules/versionCheck";
+import { guard_RelationshipData, RelationshipData, RelationshipsGetNickname } from "./modules/relationships";
 
 import cloneDeep from "lodash-es/cloneDeep";
 import isEqual from "lodash-es/isEqual";
@@ -41,8 +40,21 @@ export class ChatroomCharacter {
 		return this.Character.Name;
 	}
 
+	get Nickname(): string {
+		return RelationshipsGetNickname(this) ?? CharacterNickname(this.Character);
+	}
+
+	get supporterStatus(): BCXSupporterType {
+		const status = otherSupporterStatus.get(this.MemberNumber);
+		return status?.verified ? status.status : undefined;
+	}
+
 	toString(): string {
 		return `${this.Name} (${this.MemberNumber})`;
+	}
+
+	toNicknamedString(): string {
+		return `${this.Nickname} (${this.MemberNumber})`;
 	}
 
 	constructor(character: Character) {
@@ -174,7 +186,7 @@ export class ChatroomCharacter {
 		});
 	}
 
-	logMessageDelete(time: number): Promise<boolean> {
+	logMessageDelete(time: number | number[]): Promise<boolean> {
 		return sendQuery("logDelete", time, this.MemberNumber).then(data => {
 			if (typeof data !== "boolean") {
 				console.error("BCX: Bad data during 'logDelete' query\n", data);
@@ -272,7 +284,7 @@ export class ChatroomCharacter {
 		});
 	}
 
-	curseBatch(mode: "items" | "clothes", includingEmpty: boolean): Promise<boolean> {
+	curseBatch(mode: "items" | "clothes" | "body", includingEmpty: boolean): Promise<boolean> {
 		return sendQuery("curseBatch", { mode, includingEmpty }, this.MemberNumber).then(data => {
 			if (typeof data !== "boolean") {
 				console.error("BCX: Bad data during 'curseBatch' query\n", data);
@@ -322,6 +334,16 @@ export class ChatroomCharacter {
 		});
 	}
 
+	conditionUpdateMultiple<C extends ConditionsCategories>(category: C, conditions: ConditionsCategoryKeys[C][], data: Partial<ConditionsConditionPublicDataBase>): Promise<boolean> {
+		return sendQuery("conditionUpdateMultiple", { category, conditions, data }, this.MemberNumber).then(res => {
+			if (typeof res !== "boolean") {
+				console.error("BCX: Bad data during 'conditionUpdateMultiple' query\n", res);
+				throw new Error("Bad data");
+			}
+			return res;
+		});
+	}
+
 	conditionCategoryUpdate<C extends ConditionsCategories>(category: C, data: ConditionsCategoryConfigurableData): Promise<boolean> {
 		return sendQuery("conditionCategoryUpdate", { category, data }, this.MemberNumber).then(res => {
 			if (typeof res !== "boolean") {
@@ -352,6 +374,69 @@ export class ChatroomCharacter {
 		});
 	}
 
+	exportImportDoExport(category: string, compress: boolean = true): Promise<string> {
+		return sendQuery("export_import_do_export", {
+			category,
+			compress
+		}, this.MemberNumber).then(res => {
+			if (typeof res !== "string") {
+				console.error("BCX: Bad data during 'export_import_do_export' query\n", res);
+				throw new Error("Bad data");
+			}
+			return res;
+		});
+	}
+
+	exportImportDoImport(category: string, data: string): Promise<string> {
+		return sendQuery("export_import_do_import", {
+			category,
+			data
+		}, this.MemberNumber).then(res => {
+			if (typeof res !== "string") {
+				console.error("BCX: Bad data during 'export_import_do_import' query\n", res);
+				throw new Error("Bad data");
+			}
+			return res;
+		});
+	}
+
+	relatonshipsGet(): Promise<BCX_queries["relatonshipsGet"][1]> {
+		return sendQuery("relatonshipsGet", undefined, this.MemberNumber).then(res => {
+			if (
+				!isObject(res) ||
+				!Array.isArray(res.relationships) ||
+				!res.relationships.every(guard_RelationshipData) ||
+				typeof res.access_view_all !== "boolean" ||
+				typeof res.access_modify_self !== "boolean" ||
+				typeof res.access_modify_others !== "boolean"
+			) {
+				console.error("BCX: Bad data during 'relatonshipsGet' query\n", res);
+				throw new Error("Bad data");
+			}
+			return res;
+		});
+	}
+
+	relationshipsRemove(memberNumber: number): Promise<boolean> {
+		return sendQuery("relationshipsRemove", memberNumber, this.MemberNumber).then(res => {
+			if (typeof res !== "boolean") {
+				console.error("BCX: Bad data during 'relationshipsRemove' query\n", res);
+				throw new Error("Bad data");
+			}
+			return res;
+		});
+	}
+
+	relationshipsSet(data: RelationshipData): Promise<boolean> {
+		return sendQuery("relationshipsSet", data, this.MemberNumber).then(res => {
+			if (typeof res !== "boolean") {
+				console.error("BCX: Bad data during 'relationshipsSet' query\n", res);
+				throw new Error("Bad data");
+			}
+			return res;
+		});
+	}
+
 	hasAccessToPlayer(): boolean {
 		return ServerChatRoomGetAllowItem(this.Character, Player);
 	}
@@ -365,118 +450,16 @@ export class PlayerCharacter extends ChatroomCharacter {
 	/** HACK: Otherwise TS wrongly assumes PlayerCharacter to be identical to ChatroomCharacter */
 	public readonly playerObject = true;
 
+	override get supporterStatus(): BCXSupporterType {
+		return supporterStatus;
+	}
+
 	override isPlayer(): this is PlayerCharacter {
 		return true;
 	}
 
-	override getDisabledModules(): Promise<ModuleCategory[]> {
-		return Promise.resolve(getDisabledModules());
-	}
-
-	override getPermissions(): Promise<PermissionData> {
-		return Promise.resolve(getPlayerPermissionSettings());
-	}
-
-	override getPermissionAccess(permission: BCX_Permissions): Promise<boolean> {
-		return Promise.resolve(checkPermissionAccess(permission, this));
-	}
-
 	override getMyAccessLevel(): Promise<AccessLevel.self> {
 		return Promise.resolve(AccessLevel.self);
-	}
-
-	override setPermission(permission: BCX_Permissions, type: "self", target: boolean): Promise<boolean>;
-	override setPermission(permission: BCX_Permissions, type: "min", target: AccessLevel): Promise<boolean>;
-	override setPermission(permission: BCX_Permissions, type: "self" | "min", target: boolean | AccessLevel): Promise<boolean> {
-		if (type === "self") {
-			if (typeof target !== "boolean") {
-				throw new Error("Invalid target value for self permission edit");
-			}
-			return Promise.resolve(setPermissionSelfAccess(permission, target, this));
-		} else {
-			if (typeof target !== "number") {
-				throw new Error("Invalid target value for min permission edit");
-			}
-			return Promise.resolve(setPermissionMinAccess(permission, target, this));
-		}
-	}
-
-	override getRolesData(): Promise<PermissionRoleBundle> {
-		return Promise.resolve(getPlayerRoleData(this));
-	}
-
-	override editRole(role: "owner" | "mistress", action: "add" | "remove", target: number): Promise<boolean> {
-		return Promise.resolve(editRole(role, action, target, this));
-	}
-
-	override getLogEntries(): Promise<LogEntry[]> {
-		return Promise.resolve(getVisibleLogEntries(this));
-	}
-
-	override logMessageDelete(time: number): Promise<boolean> {
-		return Promise.resolve(logMessageDelete(time, this));
-	}
-
-	override getLogConfig(): Promise<LogConfig> {
-		return Promise.resolve(logGetConfig());
-	}
-
-	override setLogConfig(category: BCX_LogCategory, target: LogAccessLevel): Promise<boolean> {
-		return Promise.resolve(logConfigSet(category, target, this));
-	}
-
-	override logClear(): Promise<boolean> {
-		return Promise.resolve(logClear(this));
-	}
-
-	override logPraise(value: -1 | 0 | 1, message: string | null): Promise<boolean> {
-		return Promise.resolve(logPraise(value, message, this));
-	}
-
-	override logGetAllowedActions(): Promise<BCX_logAllowedActions> {
-		return Promise.resolve(logGetAllowedActions(this));
-	}
-
-	override curseItem(Group: string, curseProperties: boolean): Promise<boolean> {
-		return Promise.resolve(curseItem(Group, curseProperties, this));
-	}
-
-	override curseLift(Group: string): Promise<boolean> {
-		return Promise.resolve(curseLift(Group, this));
-	}
-
-	override curseBatch(mode: "items" | "clothes", includingEmpty: boolean): Promise<boolean> {
-		return Promise.resolve(curseBatch(mode, includingEmpty, this));
-	}
-
-	override curseLiftAll(): Promise<boolean> {
-		return Promise.resolve(curseLiftAll(this));
-	}
-
-	override conditionsGetByCategory<C extends ConditionsCategories>(category: C): Promise<ConditionsCategoryPublicData<C>> {
-		if (!ConditionsGetCategoryEnabled(category))
-			return Promise.reject("Category is disabled");
-		return Promise.resolve(ConditionsGetCategoryPublicData(category, this));
-	}
-
-	override conditionSetLimit<C extends ConditionsCategories>(category: C, condition: ConditionsCategoryKeys[C], limit: ConditionsLimit): Promise<boolean> {
-		return Promise.resolve(ConditionsSetLimit(category, condition, limit, this));
-	}
-
-	override conditionUpdate<C extends ConditionsCategories>(category: C, condition: ConditionsCategoryKeys[C], data: ConditionsConditionPublicData<C>): Promise<boolean> {
-		return Promise.resolve(ConditionsUpdate(category, condition, data, this));
-	}
-
-	override ruleCreate(name: BCX_Rule): Promise<boolean> {
-		return Promise.resolve(RulesCreate(name, this));
-	}
-
-	override ruleDelete(name: BCX_Rule): Promise<boolean> {
-		return Promise.resolve(RulesDelete(name, this));
-	}
-
-	conditionCategoryUpdate<C extends ConditionsCategories>(category: C, data: ConditionsCategoryConfigurableData): Promise<boolean> {
-		return Promise.resolve(ConditionsCategoryUpdate(category, data, this));
 	}
 }
 

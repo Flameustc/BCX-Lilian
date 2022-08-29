@@ -8,11 +8,22 @@ type BCX_beep_versionCheck = {
 
 type BCX_beep_versionResponse = {
 	status: "unsupported" | "deprecated" | "newAvailable" | "current";
+	supporterStatus?: BCXSupporterType;
+	supporterSecret?: string;
 };
 
 type BCX_beeps = {
 	versionCheck: BCX_beep_versionCheck;
 	versionResponse: BCX_beep_versionResponse;
+	supporterCheck: {
+		memberNumber: number;
+		status: BCXSupporterType;
+		secret: string;
+	};
+	supporterCheckResult: {
+		memberNumber: number;
+		status: BCXSupporterType;
+	};
 	clearData: true;
 };
 
@@ -33,6 +44,8 @@ type BCX_message_hello = {
 	effects?: Partial<BCX_effects>;
 	typingIndicatorEnable?: boolean;
 	screenIndicatorEnable?: boolean;
+	supporterStatus?: BCXSupporterType;
+	supporterSecret?: string;
 };
 
 type BCX_message_query = {
@@ -84,7 +97,7 @@ type BCX_queries = {
 		boolean
 	];
 	logData: [undefined, import("./modules/log").LogEntry[]];
-	logDelete: [number, boolean];
+	logDelete: [number | number[], boolean];
 	logConfigGet: [undefined, import("./modules/log").LogConfig];
 	logConfigEdit: [{
 		category: BCX_LogCategory;
@@ -110,7 +123,7 @@ type BCX_queries = {
 	curseLiftAll: [undefined, boolean];
 	curseBatch: [
 		{
-			mode: "items" | "clothes";
+			mode: "items" | "clothes" | "body";
 			includingEmpty: boolean;
 		},
 		boolean
@@ -126,11 +139,39 @@ type BCX_queries = {
 		condition: string;
 		data: ConditionsConditionPublicData;
 	}, boolean];
+	conditionUpdateMultiple: [{
+		category: ConditionsCategories;
+		conditions: string[];
+		data: Partial<ConditionsConditionPublicDataBase>;
+	}, boolean];
 	conditionCategoryUpdate: [{
 		category: ConditionsCategories;
 		data: ConditionsCategoryConfigurableData;
 	}, boolean];
 	ruleCreate: [BCX_Rule, boolean];
 	ruleDelete: [BCX_Rule, boolean];
+	rule_alt_allow_changing_appearance: [undefined, boolean];
 	commandTrigger: [[BCX_Command, ...string[]], boolean];
+	export_import_do_export: [{
+		category: string;
+		compress: boolean;
+	}, string];
+	export_import_do_import: [{
+		category: string;
+		data: string;
+	}, string];
+	relatonshipsGet: [undefined, {
+		relationships: import("./modules/relationships").RelationshipData[];
+		access_view_all: boolean;
+		access_modify_self: boolean;
+		access_modify_others: boolean;
+	}];
+	relationshipsRemove: [number, boolean];
+	relationshipsSet: [import("./modules/relationships").RelationshipData, boolean];
 };
+
+type __BCX_queries_satisfies = Satisfies<BCX_queries, Record<string, [any, any]>>;
+type __BCX_queires_no_undefined_result = {
+	[key in keyof BCX_queries]: undefined extends BCX_queries[key][1] ? false : true;
+};
+type __BCX_queries_no_undefined_result_satisfies = Satisfies<__BCX_queires_no_undefined_result, Record<string, true>>;
