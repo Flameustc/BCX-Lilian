@@ -10,14 +10,6 @@ declare const LZString: import("lz-string").LZStringStatic;
 
 type Satisfies<T extends U, U> = T;
 
-interface BCXVersion {
-	major: number;
-	minor: number;
-	patch: number;
-	extra?: string;
-	dev?: boolean;
-}
-
 type BCXSupporterType = undefined | "supporter" | "developer";
 
 // Player.OnlineSettings.BCX?: string;
@@ -284,6 +276,7 @@ type BCX_Rule =
 	| "speech_block_ooc"
 	| "speech_doll_talk"
 	| "speech_ban_words"
+	| "speech_ban_words_in_emotes"
 	| "speech_forbid_open_talking"
 	| "speech_limit_open_talking"
 	| "speech_forbid_emotes"
@@ -303,6 +296,7 @@ type BCX_Rule =
 	// | "speech_restrained_speech"
 	| "speech_alter_faltering"
 	| "speech_mandatory_words"
+	| "speech_mandatory_words_in_emotes"
 	| "speech_partial_hearing"
 	| "other_forbid_afk"
 	| "other_track_time"
@@ -399,6 +393,7 @@ type RuleCustomData = {
 	},
 	alt_set_nickname: {
 		nickname: string;
+		restore: boolean;
 	},
 	alt_hearing_whitelist: {
 		whitelistedMembers: number[];
@@ -429,6 +424,9 @@ type RuleCustomData = {
 		maxNumberOfWords: number;
 	},
 	speech_ban_words: {
+		bannedWords: string[];
+	},
+	speech_ban_words_in_emotes: {
 		bannedWords: string[];
 	},
 	speech_restrict_whisper_send: {
@@ -467,6 +465,7 @@ type RuleCustomData = {
 	// },
 	greet_room_order: {
 		greetingSentence: string;
+		affectEmotes: boolean;
 	},
 	greet_new_guests: {
 		greetingSentence: string;
@@ -475,6 +474,10 @@ type RuleCustomData = {
 	// 	listOfAllowedSentences: string[];
 	// },
 	speech_mandatory_words: {
+		mandatoryWords: string[];
+		affectWhispers: boolean;
+	},
+	speech_mandatory_words_in_emotes: {
 		mandatoryWords: string[];
 	},
 	speech_partial_hearing: {
@@ -587,6 +590,7 @@ type RuleCustomData = {
 };
 
 type RuleInternalData = {
+	alt_set_nickname: string;
 	setting_forbid_lockpicking: boolean;
 	setting_forbid_SP_rooms: boolean;
 	setting_forbid_safeword: boolean;
@@ -748,6 +752,7 @@ interface RoomTemplate {
 	Name: string;
 	Description: string;
 	Background: string;
+	Language: string;
 	Limit: string;
 	Admin: number[];
 	Game: string;

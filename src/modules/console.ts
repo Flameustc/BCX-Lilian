@@ -9,10 +9,19 @@ import { sendQuery } from "./messaging";
 import { ChatroomCharacter, getChatroomCharacter, getPlayerCharacter } from "../characters";
 import { debugGenerateReport, debugSetLogServerMessages, showErrorOverlay } from "../errorReporting";
 import { VERSION } from "../config";
+import { ModAPI } from "./console_modApi";
+import { BCX_VERSION_PARSED } from "../utils";
 
-class ConsoleInterface {
+import bcModSDK from "bondage-club-mod-sdk";
+import { cloneDeep } from "lodash-es";
+
+class ConsoleInterface implements BCX_ConsoleInterface {
 	get version(): string {
 		return VERSION;
+	}
+
+	get versionParsed(): Readonly<BCXVersion> {
+		return cloneDeep(BCX_VERSION_PARSED);
 	}
 
 	getCharacterVersion(target?: number): string | null {
@@ -127,13 +136,20 @@ class ConsoleInterface {
 		debugSetLogServerMessages(value);
 		return true;
 	}
+
+	getModApi(modName: string): BCX_ModAPI {
+		if (!bcModSDK.getModsInfo().some(mod => mod.name === modName) || modName.trim().toLowerCase() === "bcx") {
+			throw new Error("Only mods registered to ModSDK can request BCX API");
+		}
+		return Object.freeze(new ModAPI(modName));
+	}
 }
 
 export const consoleInterface: ConsoleInterface = Object.freeze(new ConsoleInterface());
 
 export class ModuleConsole extends BaseModule {
 	load() {
-		(window as any).bcx = consoleInterface;
+		window.bcx = consoleInterface;
 
 		const NMod = isNModClient();
 
@@ -205,6 +221,6 @@ export class ModuleConsole extends BaseModule {
 	}
 
 	unload() {
-		delete (window as any).bcx;
+		delete window.bcx;
 	}
 }
