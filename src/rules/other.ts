@@ -418,34 +418,44 @@ export function initRules_other() {
 							msg = `${playerName}上一次高潮是在{no_active_time}之前，但是细节已经记不清楚了。`;
 						} else {
 							msg += `${playerName}上一次是在{no_active_time}之前，`;
-							if (orgasmData.source_number !== Player.MemberNumber && orgasmData.target_number === Player.MemberNumber) {
-								if (Player.IsOwnedByMemberNumber(orgasmData.source_number)) {
-									msg += `被{last_orgasm_data.source_name}主人`;
+							if (orgasmData.activity && orgasmData.activity.startsWith("CustomData:")) {
+								let customData = orgasmData.activity.substring("CustomData:".length);
+								if (Player.IsOwnedByMemberNumber(orgasmData.source_number) || Player.IsOwnedByMemberNumber(orgasmData.target_number)) {
+									customData = customData.replaceAll("{honorific}", "主人");
 								} else {
-									msg += `被{last_orgasm_data.source_name}姐姐`;
+									customData = customData.replaceAll("{honorific}", "姐姐");
 								}
-							}
-							if (orgasmData.item) {
-								msg += `用{last_orgasm_data.item}`;
-							}
-							if (orgasmData.activity) {
-								msg += `{last_orgasm_data.activity}`;
+								msg += customData;
 							} else {
-								msg += `玩弄`;
-							}
-							if (orgasmData.target_number === Player.MemberNumber) {
-								if (orgasmData.source_number === Player.MemberNumber) {
-									msg += `自己的`;
+								if (orgasmData.source_number !== Player.MemberNumber && orgasmData.target_number === Player.MemberNumber) {
+									if (Player.IsOwnedByMemberNumber(orgasmData.source_number)) {
+										msg += `被{last_orgasm_data.source_name}主人`;
+									} else {
+										msg += `被{last_orgasm_data.source_name}姐姐`;
+									}
 								}
-								if (orgasmData.zone) {
-									msg += `{last_orgasm_data.zone}`;
+								if (orgasmData.item) {
+									msg += `用{last_orgasm_data.item}`;
 								}
-								msg += `到达高潮的。`;
-							} else {
-								if (Player.IsOwnedByMemberNumber(orgasmData.target_number)) {
-									msg += `{last_orgasm_data.target_name}主人，自己也到达了高潮。`;
+								if (orgasmData.activity) {
+									msg += `{last_orgasm_data.activity}`;
 								} else {
-									msg += `{last_orgasm_data.target_name}姐姐，自己也到达了高潮。`;
+									msg += `玩弄`;
+								}
+								if (orgasmData.target_number === Player.MemberNumber) {
+									if (orgasmData.source_number === Player.MemberNumber) {
+										msg += `自己的`;
+									}
+									if (orgasmData.zone) {
+										msg += `{last_orgasm_data.zone}`;
+									}
+									msg += `到达高潮的。`;
+								} else {
+									if (Player.IsOwnedByMemberNumber(orgasmData.target_number)) {
+										msg += `{last_orgasm_data.target_name}主人，自己也到达了高潮。`;
+									} else {
+										msg += `{last_orgasm_data.target_name}姐姐，自己也到达了高潮。`;
+									}
 								}
 							}
 						}
@@ -631,7 +641,6 @@ export function initRules_other() {
 			hookFunction("ActivityArousalItem", 0, (args, next) => {
 				const source = args[0] as Character;
 				const target = args[1] as Character;
-				console.log(`ActivityArousalItem ${typeof lastArousalData.activity === "string" ? lastArousalData.activity : lastArousalData.activity?.Name}`);
 				// Re-implement original logic
 				if (typeof lastArousalData.activity === "object") {
 					if (source.ID === 0 && target.ID !== 0) ActivityRunSelf(source, target, lastArousalData.activity);
@@ -666,6 +675,7 @@ export function initRules_other() {
 				const source = args[0] as Character;
 				const target = args[1] as Character;
 				const activity = args[2] as Activity;
+				// console.log(`ActivityRunSelf Source:${lastArousalData.source?.MemberNumber} Target:${lastArousalData.target?.MemberNumber} Activity:${typeof lastArousalData.activity === "string" ? lastArousalData.activity : lastArousalData.activity?.Name}, Zone:${lastArousalData.zone}, Item:${lastArousalData.item}`);
 				if (((Player.ArousalSettings?.Active === "Hybrid") || (Player.ArousalSettings?.Active === "Automatic")) && (source.ID === 0) && (target.ID !== 0)) {
 					let factor = (PreferenceGetActivityFactor(Player, activity.Name, false) * 5) - 10;
 					factor += Math.floor((Math.random() * 8));
@@ -698,14 +708,18 @@ export function initRules_other() {
 					diffData.last_orgasm_data.target_number = lastArousalData.target?.MemberNumber;
 					const activity = (typeof lastArousalData.activity === "string") ? lastArousalData.activity : lastArousalData.activity?.Name;
 					if (activity) {
-						const entry = ActivityDictionary.find((x) => x[0] === "Activity" + activity);
-						if (entry) {
-							diffData.last_orgasm_data.activity = (Array.isArray(entry) && entry.length >= 2) ? entry[1] : undefined;
-							if (activity.endsWith("Item")) {
-								diffData.last_orgasm_data.activity = diffData.last_orgasm_data.activity?.replace("用物品", "");
-							}
+						if (typeof lastArousalData.activity === "object" && lastArousalData.activity.CustomData) {
+							diffData.last_orgasm_data.activity = "CustomData:" + lastArousalData.activity.CustomData;
 						} else {
-							diffData.last_orgasm_data.activity = undefined;
+							const entry = ActivityDictionary.find((x) => x[0] === "Activity" + activity);
+							if (entry) {
+								diffData.last_orgasm_data.activity = (Array.isArray(entry) && entry.length >= 2) ? entry[1] : undefined;
+								if (activity.endsWith("Item")) {
+									diffData.last_orgasm_data.activity = diffData.last_orgasm_data.activity?.replace("用物品", "");
+								}
+							} else {
+								diffData.last_orgasm_data.activity = undefined;
+							}
 						}
 					}
 					diffData.last_orgasm_data.zone = AssetGroup.find((x) => x.Name === lastArousalData.zone)?.Description;

@@ -614,6 +614,8 @@ interface Activity {
 	MakeSound?: boolean;
 	/** An action that trigger when that activity is used */
 	StimulationAction?: StimulationAction;
+	/** Custom data */
+	CustomData?: string;
 }
 
 interface LogRecord {
