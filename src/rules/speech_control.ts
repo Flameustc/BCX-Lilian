@@ -196,7 +196,7 @@ export function initRules_bc_speech_control() {
 			const check = (msg: SpeechMessageInfo): boolean => {
 				if ((msg.type !== "Chat" && msg.type !== "Whisper") || state.customData == null)
 					return true;
-				const words = Array.from((msg.noOOCMessage ?? msg.originalMessage).matchAll(/[^\t\p{Z}\v.:!?~,;^]+/gmu)).map(i => i[0]);
+				const words = Array.from((msg.noOOCMessage ?? msg.originalMessage).matchAll(/[\p{L}\p{N}]+/gmu)).map(i => i[0]);
 				if (state.customData.maxNumberOfWords && words.length > state.customData.maxNumberOfWords)
 					return false;
 				if (state.customData.maxWordLength && words.some(word => word.length > state.customData!.maxWordLength))
