@@ -107,7 +107,7 @@ type EffectName =
 
 	"Lock" | "NotSelfPickable" |
 
-	"Chaste" | "BreastChaste" |
+	"Chaste" | "BreastChaste" | "ButtChaste" |
 
 	"Leash" | "CrotchRope" |
 
@@ -578,6 +578,7 @@ interface Asset {
 	Tint: TintDefinition[];
 	AllowTint: boolean;
 	DefaultTint?: string;
+	CraftGroup: string;
 }
 
 //#endregion
@@ -599,6 +600,8 @@ interface Pose {
 	Name: string;
 	Category?: 'BodyUpper' | 'BodyLower' | 'BodyFull';
 	AllowMenu?: true;
+	/** Only show in menu if an asset supports it */
+	AllowMenuTransient?: true;
 	OverrideHeight?: AssetOverrideHeight;
 	Hide?: string[];
 	MovePosition?: { Group: string; X: number; Y: number; }[];
@@ -797,6 +800,7 @@ interface Character {
 	IsChaste: () => boolean;
 	IsVulvaChaste: () => boolean;
 	IsBreastChaste: () => boolean;
+	IsButtChaste: () => boolean;
 	IsEgged: () => boolean;
 	IsOwned: () => boolean;
 	IsOwnedByPlayer: () => boolean;
@@ -903,14 +907,7 @@ interface Character {
 	Rule?: LogRecord[];
 	Status?: string | null;
 	StatusTimer?: number;
-	Crafting?: {
-		Name: string;
-		Description: string;
-		Property: string;
-		Color: string;
-		Lock: AssetLockType;
-		Item: string;
-	}[];
+	Crafting?: CraftingItem[];
 }
 
 type NPCArchetype =
@@ -2332,6 +2329,21 @@ interface PandoraBaseRoom {
 
 	/* PaintRoom */
 	Graffiti?: number;
+}
+
+//#endregion
+
+//#region Crafting items
+
+interface CraftingItem {
+	Name: string;
+	Description: string;
+	Property: string;
+	Color: string;
+	Lock: AssetLockType;
+	Item: string;
+	Private: boolean;
+	Type: string;
 }
 
 //#endregion
