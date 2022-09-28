@@ -537,6 +537,13 @@ export function initRules_other() {
 							lastArousalData.item = undefined;
 						}
 					}
+					if (source && source.Character.ID === 0 && target && target.Character.ID !== 0 && data.Sender !== Player.MemberNumber) {
+						if (data.Type === "Activity") {
+							const activityName = data.Dictionary.find((x) => x.Tag === "ActivityName")!;
+							const activity = AssetGetActivity(Player.AssetFamily, activityName.Text!)!;
+							ActivityRunSelf(source.Character, target.Character, activity);				
+						}
+					}
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
