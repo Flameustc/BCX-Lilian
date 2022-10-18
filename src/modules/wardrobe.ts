@@ -444,7 +444,8 @@ export class ModuleWardrobe extends BaseModule {
 						j_WardrobeBindsAllowedCharacter = -1;
 					});
 			} else {
-				j_WardrobeBindsAllowedCharacter = -1;
+				// j_WardrobeBindsAllowedCharacter = -1;
+				j_WardrobeBindsAllowedCharacter = char ? char.MemberNumber : -1;
 			}
 			return next(args);
 		});
