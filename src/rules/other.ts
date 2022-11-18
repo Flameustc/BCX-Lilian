@@ -550,7 +550,7 @@ export function initRules_other() {
 			// Record used item and targeted zone when activity is to other characters or by self. Target zone will be used for zone-to-zone activities
 			hookFunction("ActivityRun", 11, (args, next) => {
 				const C = args[0] as Character;
-				const activity = args[1] as Activity;
+				const activity = (args[1] as ItemActivity).Activity;
 				if (C.ID === 0) {
 					if (C.FocusGroup) {
 						lastArousalData.zone = convertGroupToZone(C.FocusGroup.Name);
