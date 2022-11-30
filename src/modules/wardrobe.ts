@@ -14,7 +14,6 @@ import { AccessLevel, registerPermission } from "./authority";
 import { ModuleCategory, Preset } from "../constants";
 import { ExtendedWardrobeInit, GuiWardrobeExtended } from "../gui/wardrobe_extended";
 import { modStorage } from "./storage";
-import zod, { ZodType } from "zod";
 
 export function j_WardrobeExportSelectionClothes(includeBinds: boolean = false): string {
 	if (!CharacterAppearanceSelection) return "";
@@ -24,11 +23,12 @@ export function j_WardrobeExportSelectionClothes(includeBinds: boolean = false):
 			cosplay: true,
 			body: true, // TODO: Toggle
 			binds: includeBinds,
-			collar: includeBinds
+			collar: includeBinds,
+			piercings: includeBinds
 		}))
 		.map((i) => ({
 			...WardrobeAssetBundle(i),
-			Craft: ValidationVerifyCraftData(i.Craft)
+			Craft: ValidationVerifyCraftData(i.Craft, i.Asset).result
 		}));
 	return LZString.compressToBase64(JSON.stringify(save));
 }
@@ -174,20 +174,23 @@ export function WardrobeImportMakeFilterFunction({
 	cosplay,
 	body,
 	binds,
-	collar
+	collar,
+	piercings
 }: {
 	cloth: boolean;
 	cosplay: boolean;
 	body: boolean;
 	binds: boolean;
 	collar: boolean;
+	piercings: boolean;
 }): (a: Item | Asset) => boolean {
 	return (a: Item | Asset) => (
 		(cloth && isCloth(a, false)) ||
 		(cosplay && isCosplay(a)) ||
 		(body && isBody(a)) ||
-		(binds && isBind(a, ["ItemNeck", "ItemNeckAccessories", "ItemNeckRestraints"])) ||
-		(collar && isBind(a, []) && ["ItemNeck", "ItemNeckAccessories", "ItemNeckRestraints"].includes(smartGetAssetGroup(a).Name))
+		(binds && isBind(a, ["ItemNeck", "ItemNeckAccessories", "ItemNeckRestraints", "ItemNipplesPiercings", "ItemVulvaPiercings"])) ||
+		(collar && isBind(a, []) && ["ItemNeck", "ItemNeckAccessories", "ItemNeckRestraints"].includes(smartGetAssetGroup(a).Name)) ||
+		(piercings && isBind(a, []) && ["ItemNipplesPiercings", "ItemVulvaPiercings"].includes(smartGetAssetGroup(a).Name))
 	);
 }
 
@@ -200,18 +203,36 @@ export function ValidationCanAccessCheck(character: Character, group: AssetGroup
 	);
 }
 
-export const CraftedItemProperties_schema: ZodType<CraftedItemProperties> = zod.object({
-	Name: zod.string(),
-	MemberName: zod.string().optional(),
-	MemberNumber: zod.number().int().optional(),
-	Description: zod.string(),
-	Property: zod.string()
-});
-export function ValidationVerifyCraftData(Craft: unknown): CraftedItemProperties | undefined {
+export function ValidationVerifyCraftData(Craft: unknown, Asset: Asset | null): {
+	result: CraftingItem | undefined;
+	messages: string[];
+} {
+	if (!isObject(Craft)) {
+		return {
+			result: undefined,
+			messages: [`Expected object, got ${typeof Craft}`]
+		};
+	}
+	const saved = console.warn;
 	try {
-		return CraftedItemProperties_schema.parse(Craft);
-	} catch (_) {
-		return undefined;
+		const messages: string[] = [];
+		console.warn = (m: unknown) => {
+			if (typeof m === "string") {
+				messages.push(m);
+			}
+		};
+		const result = CraftingValidate(Craft as CraftingItem, Asset, true);
+		return {
+			result: result > CraftingStatusCode.CRITICAL_ERROR ? Craft as CraftingItem : undefined,
+			messages
+		};
+	} catch (error) {
+		return {
+			result: undefined,
+			messages: [`Validation failed: ${error}`]
+		};
+	} finally {
+		console.warn = saved;
 	}
 }
 
@@ -248,7 +269,7 @@ export function WardrobeDoImport(C: Character, data: ItemBundle[], filter: (a: I
 							lockAssignMemberNumber: Player.MemberNumber
 						});
 					}
-					item.Craft = ValidationVerifyCraftData(cloth.Craft);
+					item.Craft = ValidationVerifyCraftData(cloth.Craft, A).result;
 				}
 			}
 		} else {
@@ -256,7 +277,7 @@ export function WardrobeDoImport(C: Character, data: ItemBundle[], filter: (a: I
 		}
 	}
 
-	CharacterRefresh(C, true);
+	CharacterRefresh(C, false);
 }
 
 export function j_WardrobeImportSelectionClothes(data: string | ItemBundle[], includeBinds: boolean, force: boolean = false): string {
@@ -278,7 +299,8 @@ export function j_WardrobeImportSelectionClothes(data: string | ItemBundle[], in
 		cosplay: C.OnlineSharedSettings?.BlockBodyCosplay !== true || C.IsPlayer(),
 		body: false,
 		binds: includeBinds,
-		collar: false
+		collar: false,
+		piercings: includeBinds
 	});
 
 	if (includeBinds && !force && WardrobeImportCheckChangesLockedItem(C, data, Allow))
@@ -323,7 +345,7 @@ const helpText = "BCX's wardrobe export/import works by converting your appearan
 	"The button to the left of the 'Export'-button toggles whether items/restraints on your character should also " +
 	"be exported or imported while using quick mode. Using quick mode, importing with items has two stages: First usage adds no locks, second one also " +
 	"imports locks from the exported items. Importing an outfit with restraints will fail if it would change any item that is locked (or blocked by a locked item), " +
-	"except collars, neck accessories/restraints. Those, as well as the body itself, are ignored.";
+	"except collars, neck accessories/restraints, and piercings. Those, as well as the body itself, are ignored.";
 
 function PasteListener(ev: ClipboardEvent) {
 	if (CurrentScreen === "Appearance" && CharacterAppearanceMode === "Wardrobe" || CurrentScreen === "Wardrobe") {
@@ -342,13 +364,28 @@ function KeyChangeListener(ev: KeyboardEvent) {
 }
 
 let searchBar: HTMLInputElement | null = null;
+let searchBarAutoClose = false;
+
+function allowSearchMode(): boolean {
+	return CurrentScreen === "Appearance" &&
+		CharacterAppearanceSelection != null &&
+		CharacterAppearanceMode === "Cloth" &&
+		DialogFocusItem == null;
+}
 
 function enterSearchMode(C: Character) {
 	if (!searchBar) {
 		searchBar = ElementCreateInput("BCXSearch", "text", "", "40");
 		searchBar.oninput = () => {
-			DialogInventoryBuild(C);
-			AppearanceMenuBuild(C);
+			if (searchBar) {
+				if (searchBarAutoClose && !searchBar.value) {
+					exitSearchMode(C);
+					MainCanvas.canvas.focus();
+				} else {
+					DialogInventoryBuild(C);
+					AppearanceMenuBuild(C);
+				}
+			}
 		};
 		searchBar.focus();
 		DialogInventoryBuild(C);
@@ -360,6 +397,7 @@ function exitSearchMode(C: Character) {
 	if (searchBar) {
 		searchBar.remove();
 		searchBar = null;
+		searchBarAutoClose = false;
 		DialogInventoryBuild(C);
 		AppearanceMenuBuild(C);
 	}
@@ -687,7 +725,7 @@ export class ModuleWardrobe extends BaseModule {
 		hookFunction("AppearanceMenuBuild", 5, (args, next) => {
 			next(args);
 			const C = args[0] as Character;
-			if (CharacterAppearanceMode !== "Cloth") {
+			if (!allowSearchMode()) {
 				exitSearchMode(C);
 			} else if (searchBar) {
 				AppearanceMenu = [];
@@ -714,6 +752,22 @@ export class ModuleWardrobe extends BaseModule {
 						return;
 					}
 				}
+			}
+			next(args);
+		});
+
+		hookFunction("CommonKeyDown", 5, (args, next) => {
+			const ev = args[0] as KeyboardEvent;
+			const sb = searchBar;
+			if (!sb &&
+				CharacterAppearanceSelection &&
+				allowSearchMode() &&
+				ev.key.length === 1 &&
+				!ev.altKey && !ev.ctrlKey && !ev.metaKey
+			) {
+				enterSearchMode(CharacterAppearanceSelection);
+				searchBarAutoClose = true;
+				return;
 			}
 			next(args);
 		});

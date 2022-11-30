@@ -5,10 +5,15 @@ import { isNModClient } from "./utilsClub";
 
 import bcModSDK from "bondage-club-mod-sdk";
 
-const modApi = bcModSDK.registerMod("BCX", BCX_VERSION);
+const modApi = bcModSDK.registerMod({
+	name: "BCX",
+	fullName: "Bondage Club Extended",
+	version: BCX_VERSION,
+	repository: "https://github.com/Jomshir98/bondage-club-extended"
+});
 
 bcModSDK.errorReporterHooks.hookEnter = (fn, mod) => {
-	const ctx = debugContextStart(`Function ${fn} hook from ${mod}`, { bcxArea: mod === "BCX" });
+	const ctx = debugContextStart(`Function ${fn} hook from ${mod}`, { modArea: mod });
 	return () => {
 		ctx.end();
 	};
@@ -16,7 +21,7 @@ bcModSDK.errorReporterHooks.hookEnter = (fn, mod) => {
 
 bcModSDK.errorReporterHooks.hookChainExit = (fn, mods) => {
 	const ctx = debugContextStart(`Function ${fn} hook chain exit`, {
-		bcxArea: mods.has("BCX"),
+		modArea: mods.size === 0 ? "" : mods.size === 1 ? Array.from(mods).join("") : `[Possibly multiple mods]`,
 		extraInfo: () => mods.size > 0 ? `Patched by: ${Array.from(mods).join(", ")}` : ""
 	});
 	return () => {
@@ -70,6 +75,11 @@ function initPatchableFunction(target: string): IPatchedFunctionData {
 	return result;
 }
 
+/** Track function without adding any hooks - only checking hash */
+export function trackFunction(target: string): void {
+	initPatchableFunction(target);
+}
+
 export function hookFunction(target: string, priority: number, hook: PatchHook, module: ModuleCategory | null = null): void {
 	const data = initPatchableFunction(target);
 
@@ -116,6 +126,7 @@ export function removeAllHooksByModule(module: ModuleCategory): boolean {
 }
 
 export function patchFunction(target: string, patches: Record<string, string>): void {
+	initPatchableFunction(target);
 	modApi.patchFunction(target, patches);
 }
 

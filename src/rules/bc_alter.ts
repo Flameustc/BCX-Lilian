@@ -1,7 +1,7 @@
 import { ConditionsLimit, ModuleCategory } from "../constants";
 import { registerRule, RuleType, RuleState } from "../modules/rules";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
-import { patchFunction, hookFunction } from "../patching";
+import { patchFunction, hookFunction, trackFunction } from "../patching";
 import { ChatRoomActionMessage, getCharacterName, InfoBeep } from "../utilsClub";
 import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { getAllCharactersInRoom, registerEffectBuilder } from "../characters";
@@ -125,8 +125,7 @@ export function initRules_bc_alter() {
 				next(args);
 				ignoreDeaf = false;
 			}, ModuleCategory.Rules);
-			// does nothing but uses GetDeafLevel -> needs to be watched
-			hookFunction("PreferenceIsPlayerInSensDep", 4, (args, next) => next(args), ModuleCategory.Rules);
+			trackFunction("PreferenceIsPlayerInSensDep");
 			hookFunction("Player.GetDeafLevel", 9, (args, next) => {
 				if (ignoreDeaf) {
 					return 0;
@@ -569,7 +568,7 @@ export function initRules_bc_alter() {
 			});
 			hookFunction("ActivityOrgasmPrepare", 4, (args, next) => {
 				const C = args[0] as Character;
-				if (state.isEnforced && state.customData && C.ID === 0) {
+				if (state.isEnforced && state.customData && C.IsPlayer()) {
 					if (state.customData.orgasmHandling === "edge" && !forcedOrgasm) {
 						if (C.ArousalSettings) {
 							C.ArousalSettings.Progress = 95;
@@ -1179,14 +1178,19 @@ export function initRules_bc_alter() {
 				const data = args[0];
 
 				if (isObject(data) &&
+					// Check it is beep from person
 					!data.BeepType &&
 					typeof data.MemberNumber === "number" &&
+					// Check rule is active
 					state.isEnforced &&
 					state.customData &&
 					state.customData.allowedMembers.includes(data.MemberNumber) &&
+					// Check the message matches summon message
 					typeof data.Message === "string" &&
 					(data.Message.toLocaleLowerCase().startsWith(state.customData.summoningText.trim().toLocaleLowerCase()) || data.Message.trim().toLocaleLowerCase() === "summon") &&
-					data.ChatRoomName
+					data.ChatRoomName &&
+					// Check we are allowed into target space
+					ChatSelectGendersAllowed(data.ChatRoomSpace, Player.GetGenders())
 				) {
 					ChatRoomActionMessage(`SourceCharacter received a summon: "${state.customData.summoningText}".`, null, [
 						{ Tag: "SourceCharacter", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) }
@@ -1205,7 +1209,7 @@ export function initRules_bc_alter() {
 						ServerSend("ChatRoomLeave", "");
 						ChatRoomSetLastChatRoom("");
 						ChatRoomLeashPlayer = null;
-						CommonSetScreen("Online", "ChatSearch");
+						ChatRoomStart(data.ChatRoomSpace, "", "", "", "Introduction", BackgroundsTagList);
 						CharacterDeleteAllOnline();
 
 						// join

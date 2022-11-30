@@ -86,6 +86,14 @@ declare function CharacterSetActivePose(C: Character, NewPose: string | null, Fo
 declare function CharacterSetFacialExpression(C: Character, AssetGroup: string, Expression: string | null, Timer?: number, Color?: string | string[]): void;
 declare function CharacterNickname(C: Character): string;
 
+// Crafting.js
+declare const CraftingStatusCode: {
+	OK: 2;
+	ERROR: 1;
+	CRITICAL_ERROR: 0;
+};
+declare function CraftingValidate(Craft: CraftingItem, Asset?: Asset | null, Warn?: boolean): CraftingStatusType;
+
 // Element.js
 declare function ElementIsScrolledToEnd(ID: string): boolean;
 declare function ElementScrollToEnd(ID: string): void;
@@ -168,6 +176,7 @@ declare function ChatRoomShouldBlockGaggedOOCMessage(Message: string, WhisperTar
 declare function ChatRoomPlayerIsAdmin(): boolean;
 declare function ChatRoomClearAllElements(): void;
 declare function ChatRoomListUpdate(list: number[], adding: boolean, number: number): void;
+declare function ChatRoomStart(Space: ChatRoomSpaceType, Game: string, LeaveRoom: string, LeaveSpace: string, Background: string, BackgroundTagList: any[]): void;
 
 // ChatAdmin.js
 declare var ChatAdminBackgroundIndex: number;
@@ -185,6 +194,9 @@ declare var ChatCreateShowBackgroundMode: boolean;
 // ChatBlockItem.js
 declare var ChatBlockItemEditable: boolean;
 declare var ChatBlockItemReturnData: { Screen?: string; };
+
+// ChatSelect.js
+declare function ChatSelectGendersAllowed(space: string, genders: string[]): boolean;
 
 // Server.js
 declare var ServerBeep: {

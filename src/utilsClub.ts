@@ -5,7 +5,6 @@ import { RelationshipsGetNickname } from "./modules/relationships";
 import { BCX_VERSION_PARSED } from "./utils";
 import { supporterStatus } from "./modules/versionCheck";
 
-import bcModSDK from "bondage-club-mod-sdk";
 import { omit } from "lodash-es";
 
 const GROUP_NAME_OVERRIDES: Record<string, string> = {
@@ -117,15 +116,11 @@ export function InfoBeep(msg: string, timer: number = 3000) {
 export function ChatRoomActionMessage(msg: string, target: null | number = null, dictionary: ChatMessageDictionaryEntry[] = []) {
 	if (!msg) return;
 	ServerSend("ChatRoomChat", {
-		Content: "Beep",
+		Content: "BCX_PLAYER_CUSTOM_DIALOG",
 		Type: "Action",
 		Target: target,
 		Dictionary: [
-			{ Tag: "Beep", Text: "msg" },
-			{ Tag: "Biep", Text: "msg" },
-			{ Tag: "Sonner", Text: "msg" },
-			{ Tag: "发送私聊", Text: "msg" },
-			{ Tag: "msg", Text: msg },
+			{ Tag: "MISSING PLAYER DIALOG: BCX_PLAYER_CUSTOM_DIALOG", Text: msg },
 			...dictionary
 		]
 	});
@@ -166,14 +161,7 @@ export function isNModClient(): boolean {
 
 export function detectOtherMods() {
 	const w = window as any;
-	const ModSDKMods: Record<string, string | boolean> = {};
-	for (const mod of bcModSDK.getModsInfo()) {
-		if (mod.name === "BCX")
-			continue;
-		ModSDKMods[mod.name] = mod.version || true;
-	}
 	return {
-		...ModSDKMods,
 		NMod: isNModClient(),
 		BondageClubTools: (window as any).BCX_BondageClubToolsPatch === true || ServerSocket.listeners("ChatRoomMessage").some(i => i.toString().includes("window.postMessage")),
 		BCFriendList: ServerSocket.listeners("AccountQueryResult").some(i => i.toString().includes("f_t_body.innerText")),
