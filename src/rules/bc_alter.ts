@@ -641,14 +641,14 @@ export function initRules_bc_alter() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-			hookFunction("ActivityRunSelf", 10, (args, next) => {
-				if (state.inEffect) {
-					args[0] = lastArousalData.source || args[0];
-					args[1] = lastArousalData.target || args[1];
-					args[2] = lastArousalData.activity || args[2];
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
+			// hookFunction("ActivityRunSelf", 10, (args, next) => {
+			// 	if (state.inEffect) {
+			// 		args[0] = lastArousalData.source || args[0];
+			// 		args[1] = lastArousalData.target || args[1];
+			// 		args[2] = lastArousalData.activity || args[2];
+			// 	}
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
 			hookFunction("ActivitySetArousalTimer",	0, (args, next) => {
 				const C = args[0] as Character;
 				const activity = args[1] as Activity;

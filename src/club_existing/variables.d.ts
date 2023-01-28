@@ -70,6 +70,7 @@ declare function CommonColorsEqual(C1: string | string[], C2: string | string[])
 declare function CommonArraysEqual(a1: any[], a2: any[]): boolean;
 declare function CommonSetScreen(NewModule: string, NewScreen: string): void;
 declare function CommonConvertStringToArray(s: string): number[];
+declare function CommonGet(Path: string, Callback: (this: XMLHttpRequest, xhr: XMLHttpRequest) => void, RetriesLeft?: number): void;
 
 // FriendList.js
 declare var FriendListBeepTarget: number | null;
@@ -292,6 +293,11 @@ declare function ValidationCopyProperty(sourceProperty: any, targetProperty: any
 
 // Text.js
 declare function TextGet(TextTag: string): string;
+
+// Translation.js
+declare var TranslationCache: { [key: string]: string[] };
+declare function TranslationParseTXT(str: string): string[];
+declare function TranslationString(S: string, T: string[], CharacterName: string): string;
 
 // Struggle.js
 declare var StruggleLockPickOrder: any;

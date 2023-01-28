@@ -21,7 +21,7 @@ export type ArousalData = {
 	target?: Character;
 	activity?: Activity | string;
 	zone?: string;
-	item?: string;
+	item?: Asset | string;
 };
 export const lastArousalData: ArousalData = {};
 
@@ -375,6 +375,28 @@ export function initRules_other() {
 		return sourceGroup || groupName;
 	};
 
+	type DictionaryType = "Asset" | "Activity";
+
+	const translationDicts: {
+		[key: string]: string[];
+	} = {};
+
+	const loadDict = (key: DictionaryType, path: string) => {
+		if (TranslationCache[path] === undefined) {
+			CommonGet(path, function () {
+				if (this.status === 200) {
+					translationDicts[key] = TranslationParseTXT(this.responseText);
+				}
+			});
+		} else {
+			translationDicts[key] = TranslationCache[path];
+		}
+	};
+
+	const translate = (str: string, type: DictionaryType): string => {
+		return TranslationString(str, translationDicts[type], "");
+	};
+
 	registerRule("other_track_status", {
 		name: "Track status",
 		type: RuleType.Other,
@@ -426,6 +448,8 @@ export function initRules_other() {
 									customData = customData.replaceAll("{honorific}", "姐姐");
 								}
 								msg += customData;
+							} else if (orgasmData.activity === "stimulate") {
+								msg += `被{last_orgasm_data.item}刺激{last_orgasm_data.zone}到达高潮的。`;
 							} else {
 								if (orgasmData.source_number !== Player.MemberNumber && orgasmData.target_number === Player.MemberNumber) {
 									if (Player.IsOwnedByMemberNumber(orgasmData.source_number)) {
@@ -471,218 +495,226 @@ export function initRules_other() {
 				return false;
 			}, null, false);
 			// Force show activities to avoid ActivityEffectFlat get skipped
-			hookFunction("ChatRoomStimulationMessage", 0, (args, next) => {
-				if (Player.ChatSettings) {
-					Player.ChatSettings.ShowActivities = true;
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
+			// hookFunction("ChatRoomStimulationMessage", 0, (args, next) => {
+			// 	if (Player.ChatSettings) {
+			// 		Player.ChatSettings.ShowActivities = true;
+			// 	}
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
 			// Record event name as activity name for ActivityEffectFlat
-			hookFunction("CommonRandomItemFromList", 0, (args, next) => {
-				const result = next(args);
-				if (typeof result.event === "string") {
-					const dice = Math.random();
-					if (dice <= result.chance) {
-						result.chance = 1.0;
-						lastArousalData.activity = result.event;
-					} else {
-						result.chance = 0.0;
-					}
-				}
-				return result;
-			}, ModuleCategory.Rules);
+			// hookFunction("CommonRandomItemFromList", 0, (args, next) => {
+			// 	const result = next(args);
+			// 	if (typeof result.event === "string") {
+			// 		const dice = Math.random();
+			// 		if (dice <= result.chance) {
+			// 			result.chance = 1.0;
+			// 			lastArousalData.activity = result.event;
+			// 		} else {
+			// 			result.chance = 0.0;
+			// 		}
+			// 	}
+			// 	return result;
+			// }, ModuleCategory.Rules);
 			// Track stimulation events, activity is already recorded in CommonRandomItemFromList
-			hookFunction("ActivityEffectFlat", 11, (args, next) => {
-				const source = args[0] as Character;
-				const target = args[1] as Character;
-				const group = args[3] as string;
-				if (target.ID === 0) {
-					lastArousalData.source = source;
-					lastArousalData.target = Player;
-					lastArousalData.zone = convertGroupToZone(group);
-					lastArousalData.item = InventoryGet(Player, group)?.Asset.Name;
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
-			// Record used item and targeted zone when activity is from other characters
-			hookFunction("ChatRoomMessage", 11, (args, next) => {
+			// hookFunction("ActivityEffectFlat", 11, (args, next) => {
+			// 	const source = args[0] as Character;
+			// 	const target = args[1] as Character;
+			// 	const group = args[3] as string;
+			// 	if (target.ID === 0) {
+			// 		lastArousalData.source = source;
+			// 		lastArousalData.target = Player;
+			// 		lastArousalData.zone = convertGroupToZone(group);
+			// 		lastArousalData.item = InventoryGet(Player, group)?.Asset;
+			// 	}
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
+			// Record all information when action/activity is from other characters
+			hookFunction("ChatRoomMessageRunExtractors", 0, (args, next) => {
 				const data = args[0] as IChatRoomMessage;
 				if (data && data.Type && data.Dictionary && Array.isArray(data.Dictionary)) {
-					const sourceCharacter = data.Dictionary.find((x) => x.Tag === "SourceCharacter");
-					const source = (sourceCharacter && sourceCharacter.MemberNumber) ? getChatroomCharacter(sourceCharacter.MemberNumber) : null;
-					const targetCharacter = data.Dictionary.find((x) => x.Tag && ["TargetCharacter", "TargetCharacterName", "DestinationCharacter", "DestinationCharacterName"].includes(x.Tag));
-					const target = (targetCharacter && targetCharacter.MemberNumber) ? getChatroomCharacter(targetCharacter.MemberNumber) : null;
-					if (source && source.Character.ID !== 0 && target && target.Character.ID === 0) {
-						if (data.Type === "Action") {
-							const group = data.Dictionary.find((x) => x.AssetGroupName);
-							if (group) {
-								lastArousalData.zone = convertGroupToZone(group.AssetGroupName as string);
-							} else {
-								lastArousalData.zone = undefined;
-							}
-							const assetName = data.Dictionary.find((x) => x.AssetName);
-							const asset = assetName ? Asset.find((x) => x.Name === assetName.AssetName) : undefined;
-							if (asset) {
-								lastArousalData.item = asset.DynamicName(source.Character) || asset.Name;
-							} else {
-								lastArousalData.item = undefined;
-							}
-						} else if (data.Type === "Activity") {
-							const group = data.Dictionary.find((x) => x.Tag === "ActivityGroup");
-							if (group && group.Text) {
-								lastArousalData.zone = convertGroupToZone(group.Text);
-							} else {
-								lastArousalData.zone = undefined;
-							}
-							lastArousalData.item = undefined;
-						}
-					}
-					if (source && source.Character.ID === 0 && target && target.Character.ID !== 0 && data.Sender !== Player.MemberNumber) {
-						if (data.Type === "Activity") {
-							const activityName = data.Dictionary.find((x) => x.Tag === "ActivityName")!;
-							const activity = AssetGetActivity(Player.AssetFamily, activityName.Text!)!;
-							ActivityRunSelf(source.Character, target.Character, activity);				
+					if (data.Sender === Player.MemberNumber && data.Type === "Action" && data.Content.startsWith("ChatRoomStimulationMessage")) {
+						const groupEntry = data.Dictionary.find((x) => (x as any).Tag === "AssetGroup") as TextDictionaryEntry | undefined;
+						const assetEntry = data.Dictionary.find((x) => (x as any).Tag === "AssetName") as TextDictionaryEntry | undefined;
+						lastArousalData.source = Player;
+						lastArousalData.target = Player;
+						lastArousalData.activity = "stimulate";
+						const group = AssetGroup.find((x) => x.Description.toLowerCase() === groupEntry?.Text);
+						lastArousalData.zone = group ? convertGroupToZone(group.Name) : undefined;
+						lastArousalData.item = assetEntry ? Asset.find((x) => x.Description.toLowerCase() === assetEntry.Text) : undefined;
+					} else if (data.Type === "Activity") {
+						// const sourceEntry = data.Dictionary.find((x) => typeof (x as any).SourceCharacter === "number") as SourceCharacterDictionaryEntry | undefined;
+						// const source = sourceEntry ? getChatroomCharacter(sourceEntry.SourceCharacter) : null;
+						// const targetEntry = data.Dictionary.find((x) => typeof (x as any).TargetCharacter === "number") as TargetCharacterDictionaryEntry | undefined;
+						// const target = targetEntry ? getChatroomCharacter(targetEntry.TargetCharacter) : null;
+						const sourceEntry = data.Dictionary.find((x) => (x as any).Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
+						const source = sourceEntry ? getChatroomCharacter(sourceEntry.MemberNumber)?.Character : undefined;
+						const targetEntry = data.Dictionary.find((x) => (typeof (x as any).Tag === "string")
+								&& ["TargetCharacter", "TargetCharacterName", "DestinationCharacter", "DestinationCharacterName"].includes((x as any).Tag as string)) as CharacterReferenceDictionaryEntry | undefined;
+						const target = targetEntry ? getChatroomCharacter(targetEntry.MemberNumber)?.Character : undefined;
+						const activityEntry = data.Dictionary.find((x) => typeof (x as any).ActivityName === "string") as ActivityNameDictionaryEntry | undefined;
+						const activity = activityEntry ? AssetGetActivity(Player.AssetFamily, activityEntry.ActivityName) : undefined;
+						const groupEntry = data.Dictionary.find((x) => typeof (x as any).FocusGroupName === "string") as FocusGroupDictionaryEntry | undefined;
+						const zone = groupEntry ? convertGroupToZone(groupEntry.FocusGroupName as string) : undefined;
+						const assetEntry = data.Dictionary.find((x) => (x as any).Tag === "ActivityAsset") as AssetReferenceDictionaryEntry | undefined;
+						const asset = assetEntry ? Asset.find((x) => x.Name === assetEntry.AssetName) : undefined;
+
+						if ((source && source.ID === 0) || (target && target.ID === 0)) {
+							lastArousalData.source = source;
+							lastArousalData.target = target;
+							lastArousalData.activity = activity;
+							lastArousalData.zone = zone;
+							lastArousalData.item = asset;
 						}
 					}
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
 			// Record used item and targeted zone when activity is to other characters or by self. Target zone will be used for zone-to-zone activities
-			hookFunction("ActivityRun", 11, (args, next) => {
-				const C = args[0] as Character;
-				const activity = (args[1] as ItemActivity).Activity;
-				if (C.ID === 0) {
-					if (C.FocusGroup) {
-						lastArousalData.zone = convertGroupToZone(C.FocusGroup.Name);
-					} else {
-						lastArousalData.zone = undefined;
-					}
-				} else {
-					if (C.FocusGroup) {
-						lastArousalData.zone = convertGroupToZone(C.FocusGroup.Name);
-					} else {
-						lastArousalData.zone = undefined;
-					}
-					if (activity.Prerequisite.includes("UseMouth")) {
-						lastArousalData.zone = "ItemMouth";
-					} else if (activity.Prerequisite.includes("UseTongue")) {
-						lastArousalData.zone = "ItemMouth";
-					} else if (activity.Prerequisite.includes("UseHands")) {
-						lastArousalData.zone = "ItemHands";
-					} else if (activity.Prerequisite.includes("UseArms")) {
-						lastArousalData.zone = "ItemHands";
-					} else if (activity.Prerequisite.includes("UseFeet")) {
-						lastArousalData.zone = "ItemFeet";
-					} else if (activity.Prerequisite.some(x => x.startsWith("Needs-"))) {
-						const idx = activity.Prerequisite.findIndex(x => x.startsWith("Needs-"));
-						const activityItem = Player.Appearance.find(item =>
-							(item.Asset && Array.isArray(item.Asset.AllowActivity) && item.Asset.AllowActivity.includes(activity.Prerequisite[idx].substring(6)))
-							|| (item.Property && Array.isArray(item.Property.AllowActivity) && item.Property.AllowActivity.includes(activity.Prerequisite[idx].substring(6)))
-						);
-						if (activityItem !== undefined) {
-							lastArousalData.zone = activityItem.Asset.ArousalZone;
-						}
-					} else {
-						// No associated arousal zone
-					}
-				}
-				lastArousalData.item = undefined;
-				return next(args);
-			}, ModuleCategory.Rules);
+			// hookFunction("ActivityRun", 11, (args, next) => {
+			// 	const C = args[0] as Character;
+			// 	const activity = (args[1] as ItemActivity).Activity;
+			// 	if (C.ID === 0) {
+			// 		if (C.FocusGroup) {
+			// 			lastArousalData.zone = convertGroupToZone(C.FocusGroup.Name);
+			// 		} else {
+			// 			lastArousalData.zone = undefined;
+			// 		}
+			// 	} else {
+			// 		if (C.FocusGroup) {
+			// 			lastArousalData.zone = convertGroupToZone(C.FocusGroup.Name);
+			// 		} else {
+			// 			lastArousalData.zone = undefined;
+			// 		}
+			// 		if (activity.Prerequisite.includes("UseMouth")) {
+			// 			lastArousalData.zone = "ItemMouth";
+			// 		} else if (activity.Prerequisite.includes("UseTongue")) {
+			// 			lastArousalData.zone = "ItemMouth";
+			// 		} else if (activity.Prerequisite.includes("UseHands")) {
+			// 			lastArousalData.zone = "ItemHands";
+			// 		} else if (activity.Prerequisite.includes("UseArms")) {
+			// 			lastArousalData.zone = "ItemHands";
+			// 		} else if (activity.Prerequisite.includes("UseFeet")) {
+			// 			lastArousalData.zone = "ItemFeet";
+			// 		} else if (activity.Prerequisite.some(x => x.startsWith("Needs-"))) {
+			// 			const idx = activity.Prerequisite.findIndex(x => x.startsWith("Needs-"));
+			// 			const activityItem = Player.Appearance.find(item =>
+			// 				(item.Asset && Array.isArray(item.Asset.AllowActivity) && item.Asset.AllowActivity.includes(activity.Prerequisite[idx].substring(6)))
+			// 				|| (item.Property && Array.isArray(item.Property.AllowActivity) && item.Property.AllowActivity.includes(activity.Prerequisite[idx].substring(6)))
+			// 			);
+			// 			if (activityItem !== undefined) {
+			// 				lastArousalData.zone = activityItem.Asset.ArousalZone;
+			// 			}
+			// 		} else {
+			// 			// No associated arousal zone
+			// 		}
+			// 	}
+			// 	lastArousalData.item = undefined;
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
 			// Fix ActivityArousalItem doesn't get triggered if there is a locked item on focus group
-			patchFunction("DialogItemClick", {
-				"else if (!ClickItem.Asset.Wear)\n\t\t\tDialogPublishAction(C, ClickItem);": `
-				else if (!ClickItem.Asset.Wear) {
-					DialogPublishAction(C, ClickItem);
-					ActivityArousalItem(Player, C, ClickItem.Asset);
-				}
-				`
-			});
-			patchFunction("ChatRoomMessage", {
-				"else if (dictionary[D].ActivityCounter) ActivityCounter = dictionary[D].ActivityCounter;": `
-				else if (dictionary[D].Tag == "ActivityName") ActivityName = dictionary[D].Text;
-				else if (dictionary[D].Tag == "ActivityGroup") GroupName = dictionary[D].Text;
-				else if (dictionary[D].ActivityCounter) ActivityCounter = dictionary[D].ActivityCounter;
-				`
-			});
+			// patchFunction("DialogItemClick", {
+			// 	"else if (!ClickItem.Asset.Wear)\n\t\t\tDialogPublishAction(C, ClickItem);": `
+			// 	else if (!ClickItem.Asset.Wear) {
+			// 		DialogPublishAction(C, ClickItem);
+			// 		ActivityArousalItem(Player, C, ClickItem.Asset);
+			// 	}
+			// 	`
+			// });
+			// patchFunction("ChatRoomMessage", {
+			// 	"else if (dictionary[D].ActivityCounter) ActivityCounter = dictionary[D].ActivityCounter;": `
+			// 	else if (dictionary[D].Tag == "ActivityName") ActivityName = dictionary[D].Text;
+			// 	else if (dictionary[D].Tag == "ActivityGroup") GroupName = dictionary[D].Text;
+			// 	else if (dictionary[D].ActivityCounter) ActivityCounter = dictionary[D].ActivityCounter;
+			// 	`
+			// });
 			// Track everything for custom actions on other characters, since it will not call ActivityRunSelf
-			hookFunction("ChatRoomPublishCustomAction", 11, (args, next) => {
-				const dictionary = args[2] as ChatMessageDictionary;
-				if (Array.isArray(dictionary)) {
-					const source = dictionary.find((x) => x.Tag === "SourceCharacter");
-					const target = dictionary.find((x) => x.Tag === "DestinationCharacter");
-					const activity = dictionary.find((x) => x.Tag === "ActivityName");
-					const group = dictionary.find((x) => x.Tag === "ActivityGroup");
-					const item = dictionary.find((x => x.Tag === "AssetName"));
-					lastArousalData.source = (source && source.MemberNumber) ? getChatroomCharacter(source.MemberNumber)?.Character : undefined;
-					lastArousalData.target = (target && target.MemberNumber) ? getChatroomCharacter(target.MemberNumber)?.Character : undefined;
-					lastArousalData.activity = (activity && activity.Text) ? AssetGetActivity(Player.AssetFamily, activity.Text) : undefined;
-					lastArousalData.zone = (group && group.Text && lastArousalData.target && lastArousalData.target.ID === 0) ? convertGroupToZone(group.Text) : undefined;
-					lastArousalData.item = (item && item.AssetName) ? item.AssetName as string : undefined;
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
+			// hookFunction("ChatRoomPublishCustomAction", 11, (args, next) => {
+			// 	const dictionary = args[2] as ChatMessageDictionary;
+			// 	if (Array.isArray(dictionary)) {
+			// 		// const sourceEntry = dictionary.find((x) => typeof (x as any).SourceCharacter === "number") as SourceCharacterDictionaryEntry | undefined;
+			// 		// const targetEntry = dictionary.find((x) => typeof (x as any).TargetCharacter === "number") as TargetCharacterDictionaryEntry | undefined;
+			// 		const sourceEntry = dictionary.find((x) => (x as any).Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
+			// 		const targetEntry = dictionary.find((x) => (x as any).Tag === "DestinationCharacter") as CharacterReferenceDictionaryEntry | undefined;
+			// 		const activityEntry = dictionary.find((x) => typeof (x as any).ActivityName === "string") as ActivityNameDictionaryEntry | undefined;
+			// 		const groupEntry = dictionary.find((x) => typeof (x as any).FocusGroupName === "string") as FocusGroupDictionaryEntry | undefined;
+			// 		const assetEntry = dictionary.find((x) => typeof (x as any).AssetName === "string") as AssetReferenceDictionaryEntry | undefined;
+			// 		// lastArousalData.source = sourceEntry ? getChatroomCharacter(sourceEntry.SourceCharacter)?.Character : undefined;
+			// 		// lastArousalData.target = targetEntry ? getChatroomCharacter(targetEntry.TargetCharacter)?.Character : undefined;
+			// 		lastArousalData.source = sourceEntry ? getChatroomCharacter(sourceEntry.MemberNumber)?.Character : undefined;
+			// 		lastArousalData.target = targetEntry ? getChatroomCharacter(targetEntry.MemberNumber)?.Character : undefined;
+			// 		lastArousalData.activity = activityEntry ? AssetGetActivity(Player.AssetFamily, activityEntry.ActivityName) : undefined;
+			// 		lastArousalData.zone = (groupEntry && lastArousalData.target && lastArousalData.target.ID === 0) ? convertGroupToZone(groupEntry.FocusGroupName) : undefined;
+			// 		lastArousalData.item = assetEntry ? Asset.find((x) => x.Name === assetEntry.AssetName) : undefined;
+			// 	}
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
 			// Record used item, associated acitivity, and targeted zone when items are used to other characters
-			hookFunction("ActivityArousalItem", 11, (args, next) => {
-				const source = args[0] as Character;
-				const target = args[1] as Character;
-				const asset = args[2] as Asset;
-				const assetActivity = asset.DynamicActivity(source);
-				const activity = assetActivity ? AssetGetActivity(Player.AssetFamily, assetActivity) : undefined;
-				if (activity) {
-					lastArousalData.activity = activity;
-				}
-				if (target.ID === 0) {
-					lastArousalData.zone = asset.ArousalZone;
-				} else {
-					lastArousalData.zone = undefined;
-				}
-				if (asset.Wear) {
-					lastArousalData.item = asset.DynamicName(target) || asset.Name;
-				} else {
-					lastArousalData.item = asset.DynamicName(source) || asset.Name;
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
+			// Deprecated since ChatRoomMessage
+			// hookFunction("ActivityArousalItem", 11, (args, next) => {
+			// 	console.log("ActivityArousalItem");
+			// 	console.log(args);
+			// 	const source = args[0] as Character;
+			// 	const target = args[1] as Character;
+			// 	const asset = args[2] as Asset;
+			// 	const assetActivity = asset.DynamicActivity(source);
+			// 	const activity = assetActivity ? AssetGetActivity(Player.AssetFamily, assetActivity) : undefined;
+			// 	if (activity) {
+			// 		lastArousalData.activity = activity;
+			// 	}
+			// 	if (target.ID === 0) {
+			// 		lastArousalData.zone = asset.ArousalZone;
+			// 	} else {
+			// 		lastArousalData.zone = undefined;
+			// 	}
+			// 	if (asset.Wear) {
+			// 		lastArousalData.item = asset.DynamicName(target) || asset.Name;
+			// 	} else {
+			// 		lastArousalData.item = asset.DynamicName(source) || asset.Name;
+			// 	}
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
 			// Override vanilla function to support DynamicActivity
-			hookFunction("ActivityArousalItem", 0, (args, next) => {
-				const source = args[0] as Character;
-				const target = args[1] as Character;
-				// Re-implement original logic
-				if (typeof lastArousalData.activity === "object") {
-					if (source.ID === 0 && target.ID !== 0) ActivityRunSelf(source, target, lastArousalData.activity);
-					if (PreferenceArousalAtLeast(target, "Hybrid") && (target.ID === 0 || target.IsNpc()))
-						ActivityEffect(source, target, lastArousalData.activity, lastArousalData.zone);
-				}
-			}, ModuleCategory.Rules);
+			// hookFunction("ActivityArousalItem", 0, (args, next) => {
+			// 	const source = args[0] as Character;
+			// 	const target = args[1] as Character;
+			// 	// Re-implement original logic
+			// 	if (typeof lastArousalData.activity === "object") {
+			// 		if (source.ID === 0 && target.ID !== 0) ActivityRunSelf(source, target, lastArousalData.activity);
+			// 		if (PreferenceArousalAtLeast(target, "Hybrid") && (target.ID === 0 || target.IsNpc()))
+			// 			ActivityEffect(source, target, lastArousalData.activity, lastArousalData.zone);
+			// 	}
+			// }, ModuleCategory.Rules);
 			// Track activities from other characters or by self, zone and item are already recorded in ChatRoomMessage or ActivityRun or ActivityArousalItem
-			hookFunction("ActivityEffect", 11, (args, next) => {
-				const source = args[0] as Character;
-				const target = args[1] as Character;
-				const activity = args[2] as Activity | string;
-				lastArousalData.source = source;
-				lastArousalData.target = target;
-				lastArousalData.activity = (typeof activity === "string") ? AssetGetActivity(Player.AssetFamily, activity) : activity;
-				return next(args);
-			}, ModuleCategory.Rules);
+			// hookFunction("ActivityEffect", 11, (args, next) => {
+			// 	console.log("ActivityEffect");
+			// 	console.log(args);
+			// 	const source = args[0] as Character;
+			// 	const target = args[1] as Character;
+			// 	const activity = args[2] as Activity | string;
+			// 	const asset = args[5] as Asset;
+			// 	lastArousalData.source = source;
+			// 	lastArousalData.target = target;
+			// 	lastArousalData.activity = (typeof activity === "string") ? AssetGetActivity(Player.AssetFamily, activity) : activity;
+			// 	lastArousalData.item = asset.Name;
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
 			// Track activities on other characters, zone and item are already recorded in ActivityRun or ActivityArousalItem
-			hookFunction("ActivityRunSelf", 11, (args, next) => {
-				const source = args[0] as Character;
-				const target = args[1] as Character;
-				const activity = args[2] as Activity;
-				if (target.ID !== 0) {
-					lastArousalData.source = source;
-					lastArousalData.target = target;
-					lastArousalData.activity = activity;
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
+			// hookFunction("ActivityRunSelf", 11, (args, next) => {
+			// 	const source = args[0] as Character;
+			// 	const target = args[1] as Character;
+			// 	const activity = args[2] as Activity;
+			// 	if (target.ID !== 0) {
+			// 		lastArousalData.source = source;
+			// 		lastArousalData.target = target;
+			// 		lastArousalData.activity = activity;
+			// 	}
+			// 	return next(args);
+			// }, ModuleCategory.Rules);
 			// Override vanilla function to use new arousal zone
 			hookFunction("ActivityRunSelf", 0, (args, next) => {
 				const source = args[0] as Character;
 				const target = args[1] as Character;
 				const activity = args[2] as Activity;
-				// console.log(`ActivityRunSelf Source:${lastArousalData.source?.MemberNumber} Target:${lastArousalData.target?.MemberNumber} Activity:${typeof lastArousalData.activity === "string" ? lastArousalData.activity : lastArousalData.activity?.Name}, Zone:${lastArousalData.zone}, Item:${lastArousalData.item}`);
 				if (((Player.ArousalSettings?.Active === "Hybrid") || (Player.ArousalSettings?.Active === "Automatic")) && (source.ID === 0) && (target.ID !== 0)) {
 					let factor = (PreferenceGetActivityFactor(Player, activity.Name, false) * 5) - 10;
 					factor += Math.floor((Math.random() * 8));
@@ -690,6 +722,8 @@ export function initRules_other() {
 					ActivitySetArousalTimer(Player, activity, lastArousalData.zone || "undefined", factor);
 				}
 			}, ModuleCategory.Rules);
+			loadDict("Asset", "Assets/Female3DCG/Female3DCG_CN.txt");
+			loadDict("Activity", "Screens/Character/Preference/ActivityDictionary_CN.txt");
 		},
 		load(state) {
 			hookFunction("ActivityOrgasmStart", 0, (args, next) => {
@@ -719,18 +753,19 @@ export function initRules_other() {
 							diffData.last_orgasm_data.activity = "CustomData:" + lastArousalData.activity.CustomData;
 						} else {
 							const entry = ActivityDictionary.find((x) => x[0] === "Activity" + activity);
-							if (entry) {
-								diffData.last_orgasm_data.activity = (Array.isArray(entry) && entry.length >= 2) ? entry[1] : undefined;
-								if (activity.endsWith("Item")) {
-									diffData.last_orgasm_data.activity = diffData.last_orgasm_data.activity?.replace("用物品", "");
-								}
+							if (entry && Array.isArray(entry) && entry.length >= 2) {
+								diffData.last_orgasm_data.activity = translate(entry[1], "Activity");
 							} else {
-								diffData.last_orgasm_data.activity = undefined;
+								diffData.last_orgasm_data.activity = activity;
 							}
 						}
+					} else {
+						diffData.last_orgasm_data.activity = undefined;
 					}
-					diffData.last_orgasm_data.zone = AssetGroup.find((x) => x.Name === lastArousalData.zone)?.Description;
-					diffData.last_orgasm_data.item = Asset.find((x) => x.Name === lastArousalData.item)?.Description;
+					const zone = AssetGroup.find((x) => x.Name === lastArousalData.zone)?.Description;
+					diffData.last_orgasm_data.zone = zone ? translate(zone, "Asset") : undefined;
+					const asset = (typeof lastArousalData.item === "string") ? Asset.find((x) => x.Name === lastArousalData.item) : lastArousalData.item;
+					diffData.last_orgasm_data.item = asset ? translate(asset.Description, "Asset") : undefined;
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
