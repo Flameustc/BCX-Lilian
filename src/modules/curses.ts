@@ -1,7 +1,7 @@
 import { ChatroomCharacter, getChatroomCharacter, getPlayerCharacter } from "../characters";
 import { BaseModule } from "./_BaseModule";
 import { arrayUnique, capitalizeFirstLetter, dictionaryProcess, formatTimeInterval, isObject } from "../utils";
-import { ChatRoomActionMessage, ChatRoomSendLocal, getCharacterName, getVisibleGroupName, isBind, itemColorsEquals } from "../utilsClub";
+import { ChatRoomActionMessage, ChatRoomSendLocal, getCharacterName, getVisibleGroupName, itemColorsEquals } from "../utilsClub";
 import { AccessLevel, checkPermissionAccess, registerPermission } from "./authority";
 import { notifyOfChange, queryHandlers } from "./messaging";
 import { modStorageSync } from "./storage";
@@ -23,13 +23,18 @@ const CURSES_ANTILOOP_RESET_INTERVAL = 60_000;
 const CURSES_ANTILOOP_THRESHOLD = 10;
 const CURSES_ANTILOOP_SUSPEND_TIME = 600_000;
 
-export const CURSE_IGNORED_PROPERTIES = ValidationModifiableProperties.slice();
+const CURSE_IGNORED_PROPERTIES_CUSTOM = [
+	"HeartRate" // Futuristic bra
+];
+export const CURSE_IGNORED_PROPERTIES = ValidationModifiableProperties.concat(CURSE_IGNORED_PROPERTIES_CUSTOM);
 export const CURSE_IGNORED_EFFECTS = ["Lock"];
 // Ignore slave collars, as they are forced by BC
 const CURSE_IGNORED_ITEMS = ["SlaveCollar", "ClubSlaveCollar"];
 
 /** Screens on which curses don't trigger at all */
 const CURSE_INACTIVE_SCREENS: string[] = [
+	"Appearance",
+	"Wardrobe",
 	"ChatSelect",
 	"ChatSearch",
 	"ChatCreate"
@@ -87,7 +92,13 @@ export function curseAllowItemCurseProperty(asset: Asset): boolean {
 }
 
 export function curseDefaultItemCurseProperty(asset: Asset): boolean {
-	return curseAllowItemCurseProperty(asset) && asset.Extended && asset.Archetype === "typed";
+	return curseAllowItemCurseProperty(asset) &&
+		// Only extended items make sense to curse properties of
+		asset.Extended &&
+		// Only typed and modular items are allowed as they don't have extra logic by themselves
+		["typed", "modular"].includes(asset.Archetype ?? "") &&
+		// Do not curse items that can change by themselves
+		!asset.DynamicScriptDraw;
 }
 
 export function curseItem(Group: string, curseProperty: boolean | null, character: ChatroomCharacter | null): boolean {
@@ -982,10 +993,6 @@ export class ModuleCurses extends BaseModule {
 
 		// Pause curses on certain screens and when talking with NPC altogether
 		if (CURSE_INACTIVE_SCREENS.includes(CurrentScreen) || CurrentCharacter?.IsNpc())
-			return;
-
-		// Pause curses of clothes while in appearance menu
-		if (CurrentScreen === "Appearance" && !isBind(assetGroup))
 			return;
 
 		const curse = condition.data;

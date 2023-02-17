@@ -157,7 +157,7 @@ declare function CheatImport(): void;
 declare var ChatRoomCharacter: Character[];
 declare var ChatRoomTargetMemberNumber: number | null;
 declare var ChatRoomHideIconState: number;
-declare var ChatRoomData: ChatRoom;
+declare var ChatRoomData: null | ChatRoom;
 declare var ChatRoomGame: string;
 declare var ChatRoomLastMessage: string[];
 declare var ChatRoomLastMessageIndex: number;

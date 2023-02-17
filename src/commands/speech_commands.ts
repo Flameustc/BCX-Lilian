@@ -87,7 +87,9 @@ export function initCommands_speech() {
 					if (sayText &&
 						msg.type === "Chat"
 					) {
-						lastRoomName = ChatRoomData.Name;
+						if (ChatRoomData?.Name) {
+							lastRoomName = ChatRoomData.Name;
+						}
 						if (!getAllCharactersInRoom().some(c => c.MemberNumber === senderNumber)) {
 							sayText = "";
 							senderNumber = null;
@@ -210,7 +212,9 @@ export function initCommands_speech() {
 					senderNumber &&
 					(msg.type === "Chat" || msg.type === "Whisper")
 				) {
-					lastRoomName = ChatRoomData.Name;
+					if (ChatRoomData?.Name) {
+						lastRoomName = ChatRoomData.Name;
+					}
 					// end task as task giver is no longer in the room
 					if (!getAllCharactersInRoom().some(c => c.MemberNumber === senderNumber)) {
 						ChatRoomSendLocal(`Your current typing task ended prematurely, as the task giver is no longer in the room.`);
