@@ -173,7 +173,7 @@ export function initRules_bc_speech_control() {
 		longDescription: "This rule forbids PLAYER_NAME to use any words longer than set limit and limits number of words too. Both limits are configurable independently. Doesn't affect OOC text, but does affect whispers. Note: Setting '0' means this part is not limited (∞), as there is another rule to forbid open talking completely.",
 		keywords: ["limit", "restrict", "length", "count"],
 		triggerTexts: {
-			infoBeep: "You broke the doll talk rule!",
+			// infoBeep: "You broke the doll talk rule!",
 			attempt_log: "PLAYER_NAME tried to break the doll talk rule",
 			log: "PLAYER_NAME broke the doll talk rule"
 		},
