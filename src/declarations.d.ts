@@ -298,6 +298,7 @@ type BCX_Rule =
 	| "speech_mandatory_words"
 	| "speech_mandatory_words_in_emotes"
 	| "speech_partial_hearing"
+	| "speech_garble_while_talking"
 	| "other_forbid_afk"
 	| "other_track_time"
 	| "other_constant_reminder"
@@ -486,6 +487,9 @@ type RuleCustomData = {
 		randomUnderstanding: boolean;
 		affectGaggedMembersToggle: boolean;
 	},
+	speech_garble_while_talking: {
+		gagLevel: number;
+	}
 	other_forbid_afk: {
 		minutesBeforeAfk: number;
 	},
