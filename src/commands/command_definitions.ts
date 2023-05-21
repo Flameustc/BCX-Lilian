@@ -13,14 +13,14 @@ export function initCommands_definitions() {
 		open: null,
 		close: "Closed",
 		up: "Lewd",
-		down: "Shy"
+		down: "Shy",
 	};
 
 	const eyesTexts: Record<string, string> = {
 		open: "SENDER_NAME (SENDER_NUMBER) made you open your eyes",
 		close: "SENDER_NAME (SENDER_NUMBER) made you close your eyes",
 		up: "SENDER_NAME (SENDER_NUMBER) made you look up",
-		down: "SENDER_NAME (SENDER_NUMBER) made you look down"
+		down: "SENDER_NAME (SENDER_NUMBER) made you look down",
 	};
 
 	registerCommand("eyes", {
@@ -52,7 +52,7 @@ export function initCommands_definitions() {
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
 						SENDER_NAME: sender.Nickname,
-						SENDER_NUMBER: `${sender.MemberNumber}`
+						SENDER_NUMBER: `${sender.MemberNumber}`,
 					}), undefined, sender.MemberNumber);
 				}
 			}
@@ -63,7 +63,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], Object.keys(eyesExpressions));
 			}
 			return [];
-		}
+		},
 	});
 
 	const mouthExpressions: Record<string, string | null> = {
@@ -71,7 +71,7 @@ export function initCommands_definitions() {
 		open: "HalfOpen",
 		openwide: "Moan",
 		tongue: "Ahegao",
-		smile: "Smirk"
+		smile: "Smirk",
 	};
 
 	const mouthTexts: Record<string, string> = {
@@ -79,7 +79,7 @@ export function initCommands_definitions() {
 		open: "SENDER_NAME (SENDER_NUMBER) made you open your mouth",
 		openwide: "SENDER_NAME (SENDER_NUMBER) made you open your mouth wide",
 		tongue: "SENDER_NAME (SENDER_NUMBER) made you stick out your tongue",
-		smile: "SENDER_NAME (SENDER_NUMBER) made you smile"
+		smile: "SENDER_NAME (SENDER_NUMBER) made you smile",
 	};
 
 	registerCommand("mouth", {
@@ -111,7 +111,7 @@ export function initCommands_definitions() {
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
 						SENDER_NAME: sender.Nickname,
-						SENDER_NUMBER: `${sender.MemberNumber}`
+						SENDER_NUMBER: `${sender.MemberNumber}`,
 					}), undefined, sender.MemberNumber);
 				}
 			}
@@ -122,7 +122,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], Object.keys(mouthExpressions));
 			}
 			return [];
-		}
+		},
 	});
 
 	const posesArms: Record<string, AssetPoseName> = {
@@ -131,14 +131,14 @@ export function initCommands_definitions() {
 		up: "OverTheHead",
 		back: "BackBoxTie",
 		elbows: "BackElbowTouch",
-		wrists: "BackCuffs"
+		wrists: "BackCuffs",
 	};
 
 	const posesLegs: Record<string, AssetPoseName> = {
 		normal: "BaseLower",
 		kneel: "Kneel",
 		kneelspread: "KneelingSpread",
-		close: "LegsClosed"
+		close: "LegsClosed",
 	};
 
 	const armsTexts: Record<string, string> = {
@@ -147,14 +147,14 @@ export function initCommands_definitions() {
 		up: "SENDER_NAME (SENDER_NUMBER) made you raise your hands",
 		back: "SENDER_NAME (SENDER_NUMBER) made you put your hands behind your back",
 		elbows: "SENDER_NAME (SENDER_NUMBER) made you put your elbows together behind your back",
-		wrists: "SENDER_NAME (SENDER_NUMBER) made you put your wrists together behind your back"
+		wrists: "SENDER_NAME (SENDER_NUMBER) made you put your wrists together behind your back",
 	};
 
 	const legsTexts: Record<string, string> = {
 		normal: "SENDER_NAME (SENDER_NUMBER) made you put your legs into a relaxed standing stance",
 		kneel: "SENDER_NAME (SENDER_NUMBER) made you kneel with closed legs",
 		kneelspread: "SENDER_NAME (SENDER_NUMBER) made you kneel with spread legs",
-		close: "SENDER_NAME (SENDER_NUMBER) made you close your legs while standing"
+		close: "SENDER_NAME (SENDER_NUMBER) made you close your legs while standing",
 	};
 
 	registerCommand("arms", {
@@ -180,7 +180,7 @@ export function initCommands_definitions() {
 				respond(`Bad value: ${argv[0].toLowerCase()} is not one of '${Object.keys(posesArms).join("', '")}'`);
 				return false;
 			}
-			if ((typeof Player.ActivePose === "string" && Player.ActivePose === pose) || (Array.isArray(Player.ActivePose) && Player.ActivePose.includes(pose))) {
+			if (Array.isArray(Player.ActivePose) && Player.ActivePose.includes(pose)) {
 				respond(`This character is already in the chosen pose.`);
 				return false;
 			}
@@ -196,7 +196,7 @@ export function initCommands_definitions() {
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
 						SENDER_NAME: sender.Nickname,
-						SENDER_NUMBER: `${sender.MemberNumber}`
+						SENDER_NUMBER: `${sender.MemberNumber}`,
 					}), undefined, sender.MemberNumber);
 				}
 			}
@@ -207,7 +207,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], Object.keys(posesArms));
 			}
 			return [];
-		}
+		},
 	});
 
 	registerCommand("legs", {
@@ -233,7 +233,7 @@ export function initCommands_definitions() {
 				respond(`Bad value: ${argv[0].toLowerCase()} is not one of '${Object.keys(posesLegs).join("', '")}'`);
 				return false;
 			}
-			if ((typeof Player.ActivePose === "string" && Player.ActivePose === pose) || (Array.isArray(Player.ActivePose) && Player.ActivePose.includes(pose))) {
+			if (Array.isArray(Player.ActivePose) && Player.ActivePose.includes(pose)) {
 				respond(`This character is already in the chosen pose.`);
 				return false;
 			}
@@ -249,7 +249,7 @@ export function initCommands_definitions() {
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
 						SENDER_NAME: sender.Nickname,
-						SENDER_NUMBER: `${sender.MemberNumber}`
+						SENDER_NUMBER: `${sender.MemberNumber}`,
 					}), undefined, sender.MemberNumber);
 				}
 			}
@@ -260,7 +260,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], Object.keys(posesLegs));
 			}
 			return [];
-		}
+		},
 	});
 
 	registerCommand("allfours", {
@@ -281,7 +281,7 @@ export function initCommands_definitions() {
 				return false;
 			}
 			const pose = "AllFours";
-			if ((typeof Player.ActivePose === "string" && Player.ActivePose === pose) || (Array.isArray(Player.ActivePose) && Player.ActivePose.includes(pose))) {
+			if (Array.isArray(Player.ActivePose) && Player.ActivePose.includes(pose)) {
 				respond(`This character is already in the chosen pose.`);
 				return false;
 			}
@@ -301,12 +301,12 @@ export function initCommands_definitions() {
 				if (text) {
 					ChatRoomSendLocal(dictionaryProcess(text, {
 						SENDER_NAME: sender.Nickname,
-						SENDER_NUMBER: `${sender.MemberNumber}`
+						SENDER_NUMBER: `${sender.MemberNumber}`,
 					}), undefined, sender.MemberNumber);
 				}
 			}
 			return true;
-		}
+		},
 	});
 
 	registerCommand("goandwait", {
@@ -361,7 +361,7 @@ export function initCommands_definitions() {
 			InfoBeep(`You got ordered by ${sender} to wait in another room.`, 8_000);
 			ChatRoomActionMessage(`TargetCharacterName received an order by SourceCharacter (${sender.MemberNumber}) to wait in another room.`, null, [
 				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
-				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) },
 			]);
 			DialogLentLockpicks = false;
 			ChatRoomClearAllElements();
@@ -384,7 +384,7 @@ export function initCommands_definitions() {
 				Admin,
 				Ban: [],
 				Limit: 10,
-				BlockCategory: []
+				BlockCategory: [],
 			});
 			ServerSend("ChatRoomJoin", { Name });
 			return true;
@@ -397,7 +397,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[1], backgroundList);
 			}
 			return [];
-		}
+		},
 	});
 
 	registerCommand("cell", {
@@ -436,7 +436,7 @@ export function initCommands_definitions() {
 			InfoBeep(`Two maids locked you into a timer cell, following ${sender}'s command.`, 8_000);
 			ChatRoomActionMessage(`TargetCharacterName gets grabbed by two maids and locked in a timer cell, following SourceCharacter's (${sender.MemberNumber}) command.`, null, [
 				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
-				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) },
 			]);
 			DialogLentLockpicks = false;
 			ChatRoomClearAllElements();
@@ -444,7 +444,7 @@ export function initCommands_definitions() {
 			CharacterDeleteAllOnline();
 			CellLock(minutes);
 			return true;
-		}
+		},
 	});
 
 	registerCommand("asylum", {
@@ -488,7 +488,7 @@ export function initCommands_definitions() {
 			InfoBeep(`Two nurses locked you in the Asylum, following ${sender}'s command.`, 8_000);
 			ChatRoomActionMessage(`TargetCharacterName gets grabbed by two nurses and locked in the Asylum, following SourceCharacter's (${sender.MemberNumber}) command.`, null, [
 				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
-				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) },
 			]);
 			DialogLentLockpicks = false;
 			ChatRoomClearAllElements();
@@ -503,7 +503,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], ["cancel"]);
 			}
 			return [];
-		}
+		},
 	});
 
 	registerCommand("keydeposit", {
@@ -546,7 +546,7 @@ export function initCommands_definitions() {
 			}
 			ChatRoomActionMessage(`A nurse took all keys from TargetCharacterName, following SourceCharacter's (${sender.MemberNumber}) command. The keys will be deposited for ${formatTimeInterval(time)}.`, null, [
 				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
-				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) },
 			]);
 			LogAdd("KeyDeposit", "Cell", CurrentTime + time, true);
 			return true;
@@ -556,7 +556,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], ["cancel"]);
 			}
 			return [];
-		}
+		},
 	});
 
 	registerCommand("timeleft", {
@@ -604,7 +604,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], ["asylum", "ggts", "keydeposit"]);
 			}
 			return [];
-		}
+		},
 	});
 
 	registerCommand("servedrinks", {
@@ -630,7 +630,7 @@ export function initCommands_definitions() {
 			const D = `(Two maids grab you and escort you to their quarters.  Another maid addresses you.)  ${sender.Name} sent you here to work.`;
 			ChatRoomActionMessage(`TargetCharacterName gets grabbed by two maids and escorted to the maid quarters to serve drinks, following SourceCharacter's (${sender.MemberNumber}) command.`, null, [
 				{ Tag: "TargetCharacterName", MemberNumber: Player.MemberNumber, Text: CharacterNickname(Player) },
-				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) }
+				{ Tag: "SourceCharacter", MemberNumber: sender.MemberNumber, Text: CharacterNickname(sender.Character) },
 			]);
 			ChatRoomClearAllElements();
 			ServerSend("ChatRoomLeave", "");
@@ -640,7 +640,7 @@ export function initCommands_definitions() {
 			MaidQuartersMaid.Stage = "205";
 			MaidQuartersOnlineDrinkFromOwner = true;
 			return true;
-		}
+		},
 	});
 
 	registerCommand("orgasm", {
@@ -704,7 +704,7 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], ["forced", "ruined", "stop"]);
 			}
 			return [];
-		}
+		},
 	});
 
 	const emoticonExpressions: Record<string, string | null> = {
@@ -727,7 +727,7 @@ export function initCommands_definitions() {
 		gag: "LoveGag",
 		lock: "LoveLock",
 		wardrobe: "Wardrobe",
-		game: "Gaming"
+		game: "Gaming",
 	};
 
 	registerCommand("emoticon", {
@@ -768,7 +768,7 @@ export function initCommands_definitions() {
 				const text = "SENDER_NAME (SENDER_NUMBER) changed your emoticon.";
 				ChatRoomSendLocal(dictionaryProcess(text, {
 					SENDER_NAME: sender.Nickname,
-					SENDER_NUMBER: `${sender.MemberNumber}`
+					SENDER_NUMBER: `${sender.MemberNumber}`,
 				}), undefined, sender.MemberNumber);
 			}
 			return true;
@@ -778,6 +778,6 @@ export function initCommands_definitions() {
 				return Command_pickAutocomplete(argv[0], Object.keys(emoticonExpressions));
 			}
 			return [];
-		}
+		},
 	});
 }

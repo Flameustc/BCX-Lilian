@@ -19,7 +19,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to use a remote control for items on your body!",
 			attempt_log: "PLAYER_NAME tried to use a remote control on her own body, which was forbidden",
-			log: "PLAYER_NAME used a remote control on her own body, which was forbidden"
+			log: "PLAYER_NAME used a remote control on her own body, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -58,7 +58,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_remoteuse_others", {
@@ -69,7 +69,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to use a remote control on other's items!",
 			attempt_log: "PLAYER_NAME tried to use a remote control on TARGET_PLAYER's body, which was forbidden",
-			log: "PLAYER_NAME used a remote control on TARGET_PLAYER's body, which was forbidden"
+			log: "PLAYER_NAME used a remote control on TARGET_PLAYER's body, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -108,7 +108,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_keyuse_self", {
@@ -120,7 +120,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to use a key on items on your body!",
 			attempt_log: "PLAYER_NAME tried to use a key on a worn item, which was forbidden",
-			log: "PLAYER_NAME used a key on a worn item, which was forbidden"
+			log: "PLAYER_NAME used a key on a worn item, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -151,7 +151,7 @@ export function initRules_bc_blocks() {
 				}
 				return false;
 			});
-		}
+		},
 	});
 
 	registerRule("block_keyuse_others", {
@@ -162,21 +162,21 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to use a key on other's items!",
 			attempt_log: "PLAYER_NAME tried to use a key to unlock TARGET_PLAYER's item, which was forbidden",
-			log: "PLAYER_NAME used a key to unlock TARGET_PLAYER's item, which was forbidden"
+			log: "PLAYER_NAME used a key to unlock TARGET_PLAYER's item, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			allowOwnerLocks: {
 				type: "toggle",
 				default: false,
-				description: "Still allow unlocking owner locks or items"
+				description: "Still allow unlocking owner locks or items",
 			},
 			allowLoverLocks: {
 				type: "toggle",
 				default: false,
 				description: "Still allow unlocking lover locks or items",
-				Y: 530
-			}
+				Y: 530,
+			},
 		},
 		load(state) {
 			let ignore = false;
@@ -224,7 +224,7 @@ export function initRules_bc_blocks() {
 				}
 				return false;
 			});
-		}
+		},
 	});
 
 	registerRule("block_lockpicking_self", {
@@ -236,7 +236,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to lockpick worn items on your body!",
 			attempt_log: "PLAYER_NAME tried to lockpick a worn item, which was forbidden",
-			log: "PLAYER_NAME lockpicked a worn item, which was forbidden"
+			log: "PLAYER_NAME lockpicked a worn item, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -264,7 +264,7 @@ export function initRules_bc_blocks() {
 				}
 				return false;
 			});
-		}
+		},
 	});
 
 	registerRule("block_lockpicking_others", {
@@ -275,7 +275,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to lockpick items on others!",
 			attempt_log: "PLAYER_NAME tried to lockpick an item on TARGET_PLAYER, which was forbidden",
-			log: "PLAYER_NAME lockpicked an item on TARGET_PLAYER, which was forbidden"
+			log: "PLAYER_NAME lockpicked an item on TARGET_PLAYER, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -303,7 +303,7 @@ export function initRules_bc_blocks() {
 				}
 				return false;
 			});
-		}
+		},
 	});
 
 	registerRule("block_lockuse_self", {
@@ -315,7 +315,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to lock items on your body!",
 			attempt_log: "PLAYER_NAME tried to lock a worn item, which was forbidden",
-			log: "PLAYER_NAME locked a worn item, which was forbidden"
+			log: "PLAYER_NAME locked a worn item, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -343,7 +343,7 @@ export function initRules_bc_blocks() {
 				}
 				return false;
 			});
-		}
+		},
 	});
 
 	registerRule("block_lockuse_others", {
@@ -354,7 +354,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to lock other's items!",
 			attempt_log: "PLAYER_NAME tried to lock TARGET_PLAYER's item, which was forbidden",
-			log: "PLAYER_NAME locked TARGET_PLAYER's item, which was forbidden"
+			log: "PLAYER_NAME locked TARGET_PLAYER's item, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -382,7 +382,7 @@ export function initRules_bc_blocks() {
 				}
 				return false;
 			});
-		}
+		},
 	});
 
 	// TODO: Make it clearer it is blocked by BCX
@@ -395,7 +395,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to change what you are wearing!",
 			attempt_log: "PLAYER_NAME tried to use their wardrobe, which was forbidden",
-			log: "PLAYER_NAME used their wardrobe, which was forbidden"
+			log: "PLAYER_NAME used their wardrobe, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -413,7 +413,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	// TODO: Make it clearer it is blocked by BCX
@@ -425,7 +425,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to change what others wear!",
 			attempt_log: "PLAYER_NAME tried to use TARGET_PLAYER's wardrobe, which was forbidden",
-			log: "PLAYER_NAME used TARGET_PLAYER's wardrobe, which was forbidden"
+			log: "PLAYER_NAME used TARGET_PLAYER's wardrobe, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -443,7 +443,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_restrict_allowed_poses", {
@@ -457,8 +457,8 @@ export function initRules_bc_blocks() {
 			poseButtons: {
 				type: "poseSelect",
 				default: [],
-				description: "Mark poses as being allowed or forbidden:"
-			}
+				description: "Mark poses as being allowed or forbidden:",
+			},
 		},
 		load(state) {
 			let bypassPoseChange = false;
@@ -487,7 +487,7 @@ export function initRules_bc_blocks() {
 				bypassPoseChange = false;
 				return res;
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	// TODO: Triggers on opening chat create *window*, improve to trigger on actual room creation
@@ -501,7 +501,7 @@ export function initRules_bc_blocks() {
 			attempt_log: "PLAYER_NAME tried to create a chatroom, which was forbidden",
 			log: "PLAYER_NAME created a chatroom, which was forbidden",
 			announce: "",
-			attempt_announce: ""
+			attempt_announce: "",
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		load(state) {
@@ -525,7 +525,7 @@ export function initRules_bc_blocks() {
 				}
 				next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	// TODO: Triggers on attempting to enter room, improve to trigger on actual room entry
@@ -540,15 +540,15 @@ export function initRules_bc_blocks() {
 			attempt_log: "PLAYER_NAME tried to enter a forbidden room",
 			log: "PLAYER_NAME entered a forbidden room",
 			attempt_announce: "",
-			announce: "PLAYER_NAME violated a rule to not enter this room"
+			announce: "PLAYER_NAME violated a rule to not enter this room",
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
 			roomList: {
 				type: "stringList",
 				default: [],
-				description: "Only joining rooms with these names is allowed:"
-			}
+				description: "Only joining rooms with these names is allowed:",
+			},
 		},
 		load(state) {
 			// TODO: Fix for NMod
@@ -604,7 +604,7 @@ export function initRules_bc_blocks() {
 					}
 				}, ModuleCategory.Rules);
 			}
-		}
+		},
 	});
 
 	registerRule("block_leaving_room", {
@@ -616,7 +616,7 @@ export function initRules_bc_blocks() {
 		keywords: ["controling", "limiting", "stopping", "exiting"],
 		triggerTexts: {
 			infoBeep: "Someone's presence does not allowed you to leave!",
-			attempt_announce: "PLAYER_NAME violated a rule by trying to leave this room"
+			attempt_announce: "PLAYER_NAME violated a rule by trying to leave this room",
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
@@ -624,8 +624,8 @@ export function initRules_bc_blocks() {
 				type: "roleSelector",
 				default: AccessLevel.mistress,
 				description: "Minimum role preventing room leaving:",
-				Y: 320
-			}
+				Y: 320,
+			},
 		},
 		load(state) {
 			const active = (): boolean => state.isEnforced &&
@@ -647,27 +647,27 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_freeing_self", {
 		name: "Forbid freeing self",
 		type: RuleType.Block,
 		shortDescription: "PLAYER_NAME removing any items from PLAYER_NAME's body",
-		longDescription: "This rule forbids PLAYER_NAME to remove any items from her own body. Other people can still remove them. The rule has a toggle to optionally still allow to remove items which were given a low difficulty score, such as hand-held items, plushies, etc.",
+		longDescription: "This rule forbids PLAYER_NAME to remove any items from her own body. Other people can still remove them. The rule has a toggle to optionally still allow to remove items which were given a low difficulty score by the original asset maker, such as hand-held items, plushies, etc. This means that custom crafted properties given to an item such as 'decoy' are not factored in.",
 		keywords: ["limiting", "untying", "unbinding", "bondage"],
 		triggerTexts: {
 			infoBeep: "You are not allowed to remove an item from your body!",
 			attempt_log: "PLAYER_NAME tried to remove a worn item, which was forbidden",
-			log: "PLAYER_NAME removed a worn item, which was forbidden"
+			log: "PLAYER_NAME removed a worn item, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			allowEasyItemsToggle: {
 				type: "toggle",
 				default: false,
-				description: "Still allow removing low difficulty items"
-			}
+				description: "Still allow removing low difficulty items",
+			},
 		},
 		load(state) {
 			let score: number = 999;
@@ -728,7 +728,7 @@ export function initRules_bc_blocks() {
 			hookDialogMenuButtonClick("BCX_DismountDisabled", attempt);
 			hookDialogMenuButtonClick("Escape", trigger);
 			hookDialogMenuButtonClick("BCX_EscapeDisabled", attempt);
-		}
+		},
 	});
 
 	registerRule("block_tying_others", {
@@ -740,15 +740,15 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to use an item on TARGET_PLAYER!",
 			attempt_log: "PLAYER_NAME tried to use an item on TARGET_PLAYER, which was forbidden",
-			log: "PLAYER_NAME used an item on TARGET_PLAYER, which was forbidden"
+			log: "PLAYER_NAME used an item on TARGET_PLAYER, which was forbidden",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			onlyMoreDominantsToggle: {
 				type: "toggle",
 				default: true,
-				description: "Only forbid tying people with higher dominance"
-			}
+				description: "Only forbid tying people with higher dominance",
+			},
 		},
 		load(state) {
 			hookFunction("DialogItemClick", 5, (args, next) => {
@@ -774,7 +774,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_blacklisting", {
@@ -786,7 +786,7 @@ export function initRules_bc_blocks() {
 		keywords: ["limiting"],
 		triggerTexts: {
 			infoBeep: "You are not allowed to blacklist/ghost this person!",
-			attempt_announce: "PLAYER_NAME violated a rule by trying to blacklist TARGET_PLAYER"
+			attempt_announce: "PLAYER_NAME violated a rule by trying to blacklist TARGET_PLAYER",
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
@@ -794,8 +794,8 @@ export function initRules_bc_blocks() {
 				type: "roleSelector",
 				default: AccessLevel.mistress,
 				description: "Minimum role forbidden to blacklist:",
-				Y: 320
-			}
+				Y: 320,
+			},
 		},
 		load(state) {
 			// TODO: Fix for NMod
@@ -815,7 +815,7 @@ export function initRules_bc_blocks() {
 					return next(args);
 				}, ModuleCategory.Rules);
 			}
-		}
+		},
 	});
 
 	registerRule("block_whitelisting", {
@@ -827,7 +827,7 @@ export function initRules_bc_blocks() {
 		keywords: ["limiting"],
 		triggerTexts: {
 			infoBeep: "You are not allowed to whitelist this person!",
-			attempt_announce: "PLAYER_NAME violated a rule by trying to whitelist TARGET_PLAYER"
+			attempt_announce: "PLAYER_NAME violated a rule by trying to whitelist TARGET_PLAYER",
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		load(state) {
@@ -847,7 +847,7 @@ export function initRules_bc_blocks() {
 					return next(args);
 				}, ModuleCategory.Rules);
 			}
-		}
+		},
 	});
 
 	registerRule("block_antiblind", {
@@ -859,7 +859,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to use the antiblind command!",
 			attempt_log: "PLAYER_NAME tried to use the antiblind command",
-			log: "PLAYER_NAME used the antiblind command"
+			log: "PLAYER_NAME used the antiblind command",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		stateChange(state, newState) {
@@ -879,7 +879,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to change your difficulty!",
 			attempt_log: "PLAYER_NAME tried to change her multiplayer difficulty",
-			log: "PLAYER_NAME changed her multiplayer difficulty"
+			log: "PLAYER_NAME changed her multiplayer difficulty",
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		load(state) {
@@ -914,7 +914,7 @@ export function initRules_bc_blocks() {
 				}
 				next(args);
 			});
-		}
+		},
 	});
 
 	registerRule("block_activities", {
@@ -937,7 +937,7 @@ export function initRules_bc_blocks() {
 					}
 				}
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_mainhall_maidrescue", {
@@ -959,7 +959,7 @@ export function initRules_bc_blocks() {
 					return false;
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_action", {
@@ -971,9 +971,9 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to use the action command!",
 			attempt_log: "PLAYER_NAME tried to use the action command",
-			log: "PLAYER_NAME used the action command"
+			log: "PLAYER_NAME used the action command",
 		},
-		defaultLimit: ConditionsLimit.blocked
+		defaultLimit: ConditionsLimit.blocked,
 		// Implemented externally
 	});
 
@@ -984,7 +984,7 @@ export function initRules_bc_blocks() {
 		shortDescription: "PLAYER_NAME using her permissions for her own BCX, with some exceptions",
 		longDescription: "This rule forbids PLAYER_NAME access to some parts of their own BCX they have permission to use, making it as if they do not have 'self access' (see BCX tutorial on permission system) while the rule is active. This rule still leaves access for all permissions where the lowest permitted role ('lowest access') is also set to PLAYER_NAME (to prevent getting stuck). This rule does not affect PLAYER_NAME's permissions to use another users's BCX.",
 		keywords: ["limiting", "preventing", "controlling", "accessing", "self", "rights"],
-		defaultLimit: ConditionsLimit.blocked
+		defaultLimit: ConditionsLimit.blocked,
 		// Implemented externally
 	});
 
@@ -996,7 +996,7 @@ export function initRules_bc_blocks() {
 		longDescription: "This rule forbids PLAYER_NAME from opening the room admin screen while blindfolded, as this discloses the room background and the member numbers of admins, potentially in the room right now. If PLAYER_NAME is a room admin, she can still use chat commands for altering the room or kicking/banning.",
 		keywords: ["limiting", "preventing", "controling", "seeing"],
 		triggerTexts: {
-			infoBeep: "A BCX rule prevents you from using this while unable to see!"
+			infoBeep: "A BCX rule prevents you from using this while unable to see!",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -1022,7 +1022,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_using_ggts", {
@@ -1034,7 +1034,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to recieve training by GGTS!",
 			attempt_log: "PLAYER_NAME tried to recieve training by GGTS",
-			log: "PLAYER_NAME started training by GGTS"
+			log: "PLAYER_NAME started training by GGTS",
 		},
 		defaultLimit: ConditionsLimit.limited,
 		load(state) {
@@ -1058,7 +1058,7 @@ export function initRules_bc_blocks() {
 				}
 				next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_club_slave_work", {
@@ -1076,7 +1076,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_using_unowned_items", {
@@ -1100,7 +1100,7 @@ export function initRules_bc_blocks() {
 					C.Inventory = inventoryBackup;
 				}
 			}, ModuleCategory.Rules);
-		}
+		},
 	});
 
 	registerRule("block_changing_emoticon", {
@@ -1111,7 +1111,7 @@ export function initRules_bc_blocks() {
 		triggerTexts: {
 			infoBeep: "You are not allowed to change the emoticon!",
 			attempt_log: "PLAYER_NAME tried to use the emoticon command",
-			log: "PLAYER_NAME used the emoticon command"
+			log: "PLAYER_NAME used the emoticon command",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		load(state) {
@@ -1127,7 +1127,7 @@ export function initRules_bc_blocks() {
 				}
 				return next(args);
 			});
-		}
+		},
 	});
 
 	let changed = false;
@@ -1144,14 +1144,14 @@ export function initRules_bc_blocks() {
 				type: "listSelect",
 				default: "icons",
 				options: [["icons", "Icons"], ["arousal", "Icons/Bar"], ["names", "Icons/Bar/Names"]],
-				description: "Select what shall be hidden:"
+				description: "Select what shall be hidden:",
 			},
 			alsoHideEmoticons: {
 				type: "toggle",
 				default: false,
 				description: "Also hide emoticons during the effect",
-				Y: 440
-			}
+				Y: 440,
+			},
 		},
 		load(state) {
 			hookFunction("ChatRoomDrawCharacter", 1, (args, next) => {
@@ -1201,6 +1201,6 @@ export function initRules_bc_blocks() {
 			for (const c of ChatRoomCharacter) {
 				CharacterLoadCanvas(c);
 			}
-		}
+		},
 	});
 }

@@ -5,7 +5,7 @@ import { isObject } from "../utils";
 import { BCX_setTimeout } from "../BCXContext";
 import { BCXSource, BCXSourceExternal, ChatRoomSendLocal, InfoBeep } from "../utilsClub";
 import { unload } from "../main";
-import { modStorage } from "./storage";
+import { modStorage, modStorageSync } from "./storage";
 import { announceSelf } from "./chatroom";
 import { hookFunction } from "../patching";
 
@@ -24,6 +24,7 @@ export function setSupporterVisible(visible: boolean): void {
 	} else {
 		modStorage.supporterHidden = true;
 	}
+	modStorageSync();
 	announceSelf();
 }
 
@@ -43,13 +44,13 @@ export function updateOtherSupporterStatus(memberNumber: number, status: BCXSupp
 		otherSupporterStatus.set(memberNumber, {
 			verified: status === undefined,
 			status,
-			secret
+			secret,
 		});
 		if (status && secret) {
 			sendHiddenBeep("supporterCheck", {
 				memberNumber,
 				status,
-				secret
+				secret,
 			}, VERSION_CHECK_BOT, true);
 		}
 	} else {
@@ -68,7 +69,7 @@ function sendVersionCheckBeep(): void {
 		devel: BCX_DEVEL,
 		GameVersion,
 		Source: (BCXSourceExternal ? "E:" : "") + (BCXSource ?? "[UNKNOWN]"),
-		UA: window.navigator.userAgent
+		UA: window.navigator.userAgent,
 	}, VERSION_CHECK_BOT, true);
 
 	// Set check retry timer to 5 minutes + up to minute random delay

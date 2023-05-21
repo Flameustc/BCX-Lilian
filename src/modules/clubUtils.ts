@@ -30,8 +30,8 @@ export function InvisibilityEarbuds() {
 			Property: {
 				Type: "Light",
 				Effect: [],
-				Hide: AssetGroup.map(A => A.Name).filter(A => A !== "ItemEars")
-			}
+				Hide: AssetGroup.map(A => A.Name).filter(A => A !== "ItemEars"),
+			},
 		});
 		CharacterRefresh(Player);
 	}
@@ -159,8 +159,8 @@ export class ModuleClubUtils extends BaseModule {
 				[Preset.dominant]: [true, AccessLevel.whitelist],
 				[Preset.switch]: [true, AccessLevel.friend],
 				[Preset.submissive]: [true, AccessLevel.friend],
-				[Preset.slave]: [true, AccessLevel.friend]
-			}
+				[Preset.slave]: [true, AccessLevel.friend],
+			},
 		});
 	}
 
@@ -389,7 +389,7 @@ export class ModuleClubUtils extends BaseModule {
 						Game: template.Game,
 						Admin: template.Admin,
 						Limit: size,
-						BlockCategory: template.BlockCategory
+						BlockCategory: template.BlockCategory,
 					});
 				} else {
 					ChatRoomSendLocal(

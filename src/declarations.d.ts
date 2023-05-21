@@ -12,7 +12,9 @@ type Satisfies<T extends U, U> = T;
 
 type BCXSupporterType = undefined | "supporter" | "developer";
 
-// Player.OnlineSettings.BCX?: string;
+interface PlayerOnlineSettings {
+	BCX?: string;
+}
 
 type BCX_Permissions =
 	| "authority_edit_min"
@@ -146,11 +148,11 @@ interface ConditionsConditionRequirements {
 	role?: {
 		role: import("./modules/authority").AccessLevel;
 		inverted?: true;
-	}
+	};
 	player?: {
 		memberNumber: number;
 		inverted?: true;
-	}
+	};
 }
 
 interface ConditionsConditionData<category extends ConditionsCategories = ConditionsCategories> {
@@ -334,47 +336,47 @@ type BCX_Rule =
 type RuleCustomData = {
 	block_restrict_allowed_poses: {
 		poseButtons: string[];
-	},
+	};
 	block_entering_rooms: {
 		roomList: string[];
-	},
+	};
 	block_leaving_room: {
 		minimumRole: import("./modules/authority").AccessLevel;
-	},
+	};
 	block_freeing_self: {
 		allowEasyItemsToggle: boolean;
-	},
+	};
 	block_tying_others: {
 		onlyMoreDominantsToggle: boolean;
-	},
+	};
 	block_keyuse_others: {
 		allowOwnerLocks: boolean;
 		allowLoverLocks: boolean;
-	},
+	};
 	block_blacklisting: {
 		minimumRole: import("./modules/authority").AccessLevel;
-	},
+	};
 	block_ui_icons_names: {
 		hidingStrength: string;
 		alsoHideEmoticons: boolean;
-	},
+	};
 	alt_restrict_hearing: {
 		deafeningStrength: string;
-	},
+	};
 	alt_restrict_sight: {
 		blindnessStrength: string;
-	},
+	};
 	alt_eyes_fullblind: {
 		affectPlayer: boolean;
 		hideNames: boolean;
-	},
+	};
 	alt_set_leave_slowing: {
 		leaveTime: number;
-	}
+	};
 	alt_field_of_vision: {
 		affectPlayer: boolean;
 		hideNames: boolean;
-	}
+	};
 	alt_control_orgasms: {
 		orgasmHandling: string;
 	},
@@ -389,59 +391,59 @@ type RuleCustomData = {
 	alt_room_admin_transfer: {
 		minimumRole: import("./modules/authority").AccessLevel;
 		removeAdminToggle: boolean;
-	},
+	};
 	alt_set_profile_description: {
 		playersProfileDescription: string;
-	},
+	};
 	alt_set_nickname: {
 		nickname: string;
 		restore: boolean;
-	},
+	};
 	alt_hearing_whitelist: {
 		whitelistedMembers: number[];
 		ignoreGaggedMembersToggle: boolean;
-	},
+	};
 	alt_seeing_whitelist: {
 		whitelistedMembers: number[];
-	},
+	};
 	alt_restrict_leashability: {
 		minimumRole: import("./modules/authority").AccessLevel;
-	},
+	};
 	alt_hide_friends: {
 		allowedMembers: number[];
-	},
+	};
 	alt_forced_summoning: {
 		allowedMembers: number[];
 		summoningText: string;
 		summonTime: number;
-	},
+	};
 	alt_allow_changing_appearance: {
 		minimumRole: import("./modules/authority").AccessLevel;
-	},
+	};
 	speech_specific_sound: {
 		soundWhitelist: string[];
-	},
+	};
 	speech_doll_talk: {
 		maxWordLength: number;
 		maxNumberOfWords: number;
-	},
+	};
 	speech_ban_words: {
 		bannedWords: string[];
-	},
+	};
 	speech_ban_words_in_emotes: {
 		bannedWords: string[];
-	},
+	};
 	speech_restrict_whisper_send: {
 		minimumPermittedRole: import("./modules/authority").AccessLevel;
-	},
+	};
 	speech_restrict_whisper_receive: {
 		minimumPermittedRole: import("./modules/authority").AccessLevel;
 		autoreplyText: string;
-	},
+	};
 	speech_restrict_beep_send: {
 		whitelistedMemberNumbers: number[];
 		onlyWhenBound: boolean;
-	},
+	};
 	speech_restrict_beep_receive: {
 		whitelistedMemberNumbers: number[];
 		autoreplyText: string;
@@ -452,13 +454,13 @@ type RuleCustomData = {
 	},
 	speech_greet_order: {
 		toGreetMemberNumbers: number[];
-	},
+	};
 	speech_limit_open_talking: {
 		maxNumberOfMsg: number;
-	},
+	};
 	speech_limit_emotes: {
 		maxNumberOfEmotes: number;
-	},
+	};
 	// speech_replace_spoken_words: {
 	// 	stringWithReplacingSyntax: string;
 	// },
@@ -468,38 +470,38 @@ type RuleCustomData = {
 	greet_room_order: {
 		greetingSentence: string;
 		affectEmotes: boolean;
-	},
+	};
 	greet_new_guests: {
 		greetingSentence: string;
-	},
+	};
 	// speech_restrained_speech: {
 	// 	listOfAllowedSentences: string[];
 	// },
 	speech_mandatory_words: {
 		mandatoryWords: string[];
 		affectWhispers: boolean;
-	},
+	};
 	speech_mandatory_words_in_emotes: {
 		mandatoryWords: string[];
-	},
+	};
 	speech_partial_hearing: {
 		alwaysUnderstandableWords: string[];
 		randomUnderstanding: boolean;
 		affectGaggedMembersToggle: boolean;
-	},
+	};
 	speech_garble_while_talking: {
 		gagLevel: number;
-	}
+	};
 	other_forbid_afk: {
 		minutesBeforeAfk: number;
-	},
+	};
 	other_constant_reminder: {
 		reminderText: string[];
 		reminderFrequency: number;
-	},
+	};
 	other_log_money: {
 		logEarnings: boolean;
-	},
+	};
 	other_track_time: {
 		minimumPermittedRole: import("./modules/authority").AccessLevel;
 	},
@@ -511,79 +513,79 @@ type RuleCustomData = {
 	},
 	setting_item_permission: {
 		value: string;
-	},
+	};
 	setting_forbid_lockpicking: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_forbid_SP_rooms: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_forbid_safeword: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_arousal_meter: {
-		active: string;
-		visible: string;
-	},
+		active: ArousalActiveName;
+		visible: ArousalVisibleName;
+	};
 	setting_block_vibe_modes: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_arousal_stutter: {
-		value: string;
-	},
+		value: ArousalAffectStutterName;
+	};
 	setting_show_afk: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_allow_body_mod: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_forbid_cosplay_change: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_sensdep: {
-		value: string;
+		value: SettingsSensDepName;
 		disableExamine: boolean;
 		hideMessages: boolean;
-	},
+	};
 	setting_hide_non_adjecent: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_blind_room_garbling: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_relog_keeps_restraints: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_leashed_roomchange: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_room_rejoin: {
 		value: boolean;
 		remakeRooms: boolean;
-	},
+	};
 	setting_plug_vibe_events: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_allow_tint_effects: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_allow_blur_effects: {
 		value: boolean;
 		restore: boolean;
-	},
+	};
 	setting_upsidedown_view: {
 		value: boolean;
 		restore: boolean;
@@ -643,11 +645,11 @@ type RuleCustomDataTypesOptions = {
 	stringList?: {
 		validate?: RegExp;
 		pageSize?: number;
-	}
+	};
 };
 
 type RuleCustomDataFilter<U> = {
-	[K in RuleCustomDataTypes]: RuleCustomDataTypesMap[K] extends U ? K : never;
+	[K in RuleCustomDataTypes]: U extends RuleCustomDataTypesMap[K] ? K : never;
 }[RuleCustomDataTypes];
 
 type RuleCustomDataEntryDefinition<T extends RuleCustomDataTypes = RuleCustomDataTypes> = {
@@ -761,10 +763,10 @@ interface RoomTemplate {
 	Language: string;
 	Limit: string;
 	Admin: number[];
-	Game: string;
+	Game: ChatRoomGame;
 	Private: boolean;
 	Locked: boolean;
-	BlockCategory: string[];
+	BlockCategory: ChatRoomBlockCategory[];
 	AutoApply: true | undefined;
 }
 
@@ -775,6 +777,8 @@ interface ModStorage {
 	chatShouldDisplayFirstTimeHelp?: true;
 	/** Toggle, if friendlist autorefresh is enabled */
 	FLAutorefresh?: true;
+	/** Toggle, if player chose to hide BCX icon in chatroom */
+	chatroomIconHidden?: true;
 	/** Toggle, if player chose to hide the supporter status */
 	supporterHidden?: true;
 	cheats: import("./constants").MiscCheat[];

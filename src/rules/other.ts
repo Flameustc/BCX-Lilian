@@ -42,15 +42,15 @@ export function initRules_other() {
 		keywords: ["inactivity", "detect", "record"],
 		triggerTexts: {
 			log: "PLAYER_NAME became inactive, which was forbidden",
-			announce: ""
+			announce: "",
 		},
 		defaultLimit: ConditionsLimit.blocked,
 		dataDefinition: {
 			minutesBeforeAfk: {
 				type: "number",
 				default: 10,
-				description: "Amount of minutes, before being considered inactive:"
-			}
+				description: "Amount of minutes, before being considered inactive:",
+			},
 		},
 		load() {
 			AfkTimerEventsList.forEach(e => document.addEventListener(e, afk_reset, true));
@@ -68,7 +68,7 @@ export function initRules_other() {
 		},
 		unload() {
 			AfkTimerEventsList.forEach(e => document.removeEventListener(e, afk_reset, true));
-		}
+		},
 	});
 
 	let lastUpdate: number = 0;
@@ -87,8 +87,8 @@ export function initRules_other() {
 			minimumPermittedRole: {
 				type: "roleSelector",
 				default: AccessLevel.lover,
-				description: "Minimum role able to request counted time:"
-			}
+				description: "Minimum role able to request counted time:",
+			},
 		},
 		init(state) {
 			registerWhisperCommand("hidden", "ruletime", null, (argv, sender, respond) => {
@@ -122,7 +122,7 @@ export function initRules_other() {
 				state.internalData += change;
 				lastUpdate = Date.now();
 			}
-		}
+		},
 	});
 
 	let lastReminder = 0;
@@ -140,14 +140,14 @@ export function initRules_other() {
 				type: "stringList",
 				default: [],
 				description: "The sentences that will be shown at random:",
-				Y: 296
+				Y: 296,
 			},
 			reminderFrequency: {
 				type: "number",
 				default: 15,
 				description: "Frequency of a sentence being shown (in minutes):",
-				Y: 715
-			}
+				Y: 715,
+			},
 		},
 		tick(state) {
 			if (state.inEffect && state.customData && state.customData.reminderText.length > 0 &&
@@ -159,7 +159,7 @@ export function initRules_other() {
 				return true;
 			}
 			return false;
-		}
+		},
 	});
 
 	registerRule("other_log_money", {
@@ -172,15 +172,15 @@ export function initRules_other() {
 		triggerTexts: {
 			infoBeep: "A BCX rule has logged this financial transaction!",
 			log: "PLAYER_NAME TYPE money: AMOUNT $ | new balance: BALANCE $",
-			announce: ""
+			announce: "",
 		},
 		defaultLimit: ConditionsLimit.normal,
 		dataDefinition: {
 			logEarnings: {
 				type: "toggle",
 				default: false,
-				description: "Also log getting money"
-			}
+				description: "Also log getting money",
+			},
 		},
 		internalDataValidate: (data) => typeof data === "number",
 		internalDataDefault: () => -1,
@@ -209,7 +209,7 @@ export function initRules_other() {
 				}
 			}
 			return returnValue;
-		}
+		},
 	});
 
 	/* TODO: Idea stage
@@ -251,7 +251,7 @@ export function initRules_other() {
 		triggerTexts: {
 			infoBeep: "You logged in without starting BCX beforehand!",
 			log: "PLAYER_NAME logged in without starting BCX beforehand at least once",
-			announce: ""
+			announce: "",
 		},
 		internalDataValidate: (v) => typeof v === "number",
 		internalDataDefault: () => Math.floor(Math.random() * 1_000_000),
@@ -295,7 +295,7 @@ export function initRules_other() {
 				}
 			}
 			return false;
-		}
+		},
 	});
 
 	const diffData: TrackData = {
