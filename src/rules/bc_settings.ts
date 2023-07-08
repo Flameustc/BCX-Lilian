@@ -539,7 +539,7 @@ export function initRules_bc_settings() {
 				const item = args[1] as Item;
 				const hover = args[2] as boolean;
 				const itemKey = getItemKey(item);
-				if (state.inEffect && state.customData && DialogItemPermissionMode && C.ID === 0) {
+				if (state.inEffect && state.customData && DialogMenuMode === "permissions" && C.ID === 0) {
 					if (state.customData.limitedItems.includes(itemKey)) {
 						return hover ? "#5F265C" : "#C04EB9";
 					}

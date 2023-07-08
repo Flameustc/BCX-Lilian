@@ -12,7 +12,7 @@ import { ReplaceTrackData, TrackData } from "../track";
 
 export type TimerData = {
 	asset_name: string;
-	group_name: string;
+	group_name: AssetGroupName;
 	remove_timer: number;
 };
 
@@ -370,7 +370,7 @@ export function initRules_other() {
 		}
 	};
 
-	const convertGroupToZone = (groupName: string) => {
+	const convertGroupToZone = (groupName: AssetGroupName) => {
 		const sourceGroup = AssetGroupGet(Player.AssetFamily, groupName)?.MirrorActivitiesFrom;
 		return sourceGroup || groupName;
 	};
@@ -554,7 +554,7 @@ export function initRules_other() {
 						const activityEntry = data.Dictionary.find((x) => typeof (x as any).ActivityName === "string") as ActivityNameDictionaryEntry | undefined;
 						const activity = activityEntry ? AssetGetActivity(Player.AssetFamily, activityEntry.ActivityName) : undefined;
 						const groupEntry = data.Dictionary.find((x) => typeof (x as any).FocusGroupName === "string") as FocusGroupDictionaryEntry | undefined;
-						const zone = groupEntry ? convertGroupToZone(groupEntry.FocusGroupName as string) : undefined;
+						const zone = groupEntry ? convertGroupToZone(groupEntry.FocusGroupName) : undefined;
 						const assetEntry = data.Dictionary.find((x) => (x as any).Tag === "ActivityAsset") as AssetReferenceDictionaryEntry | undefined;
 						const asset = assetEntry ? Asset.find((x) => x.Name === assetEntry.AssetName) : undefined;
 
