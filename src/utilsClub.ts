@@ -80,9 +80,10 @@ export let BCXSourceExternal: boolean = false;
 
 export function init_findBCXSource(): void {
 	for (const elem of Array.from(document.getElementsByTagName("script"))) {
-		const match = /^(https:\/\/[^?/]+|http:\/\/localhost(?::[0-9]+)?)\/([^?]+)?bcx(\.dev)?\.js($|\?)/i.exec(elem.src);
+		const match = /^((https:\/\/[^?/]+|http:\/\/localhost(?::[0-9]+)?)\/([^?]+)?)bcx(\.dev)?\.js($|\?)/i.exec(elem.src);
 		if (match) {
 			BCXSource = match[1];
+			console.debug("BCX: Using detected source:", BCXSource);
 			return;
 		}
 	}
@@ -92,7 +93,7 @@ export function init_findBCXSource(): void {
 		const match = /^(https:\/\/[^?/]+\/(?:[^?]+?)?)(?:bcx(\.dev)?\.js)?(?:$|\?)/i.exec(externalSrc);
 		if (match) {
 			BCXSource = match[1];
-			console.log("BCX: External BCX_SOURCE supplied, using it");
+			console.log("BCX: External BCX_SOURCE supplied:", BCXSource);
 			return;
 		}
 		console.warn("BCX: External BCX_SOURCE supplied, but malformed, ignoring", externalSrc);
@@ -282,6 +283,10 @@ export function smartGetAssetGroup(item: Item | Asset | AssetGroup): AssetGroup 
 		throw new Error("Failed to convert item to group");
 	}
 	return group;
+}
+
+export function isAssetGroupName(name: string): name is AssetGroupName {
+	return AssetGroup.some((group) => group.Name === name);
 }
 
 export function isCloth(item: Item | Asset | AssetGroup, allowCosplay: boolean = false): boolean {

@@ -9,7 +9,7 @@ import { ForceOrgasm } from "rules/bc_alter";
 
 export function initCommands_definitions() {
 
-	const eyesExpressions: Record<string, string | null> = {
+	const eyesExpressions: Record<string, ExpressionName> = {
 		open: null,
 		close: "Closed",
 		up: "Lewd",
@@ -66,7 +66,7 @@ export function initCommands_definitions() {
 		},
 	});
 
-	const mouthExpressions: Record<string, string | null> = {
+	const mouthExpressions: Record<string, ExpressionName> = {
 		close: null,
 		open: "HalfOpen",
 		openwide: "Moan",
@@ -635,6 +635,9 @@ export function initCommands_definitions() {
 			ChatRoomClearAllElements();
 			ServerSend("ChatRoomLeave", "");
 			CommonSetScreen("Room", "MaidQuarters");
+			// MaidQuartersMaid should be created by load
+			if (MaidQuartersMaid == null)
+				throw new Error("BCX: Missing MaidQuartersMaid when expected");
 			CharacterSetCurrent(MaidQuartersMaid);
 			MaidQuartersMaid.CurrentDialog = D;
 			MaidQuartersMaid.Stage = "205";
@@ -707,7 +710,7 @@ export function initCommands_definitions() {
 		},
 	});
 
-	const emoticonExpressions: Record<string, string | null> = {
+	const emoticonExpressions: Record<string, ExpressionName> = {
 		none: null,
 		afk: "Afk",
 		whisper: "Whisper",

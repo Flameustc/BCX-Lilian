@@ -13,8 +13,30 @@ type Satisfies<T extends U, U> = T;
 type BCXSupporterType = undefined | "supporter" | "developer";
 
 interface PlayerOnlineSettings {
+	/** Saved BCX data */
 	BCX?: string;
+	/** The last time BCX data was cleared (debug helper) */
+	BCXDataCleared?: number;
 }
+
+/** BCX added buttons to the character dialog */
+type BCX_DialogMenuButton =
+	| "BCX_RemoteDisabled"
+	| "BCX_UnlockDisabled"
+	| "BCX_PickLockDisabled"
+	| "BCX_LockDisabled"
+	| "BCX_RemoveDisabled"
+	| "BCX_StruggleDisabled"
+	| "BCX_DismountDisabled"
+	| "BCX_EscapeDisabled"
+	| "BCX_ActivityDisabled"
+	| "BCX_Search"
+	| "BCX_SearchExit"
+	| DialogMenuButton;
+
+type BCX_BackgroundTag =
+	| "[BCX] Hidden"
+	| BackgroundTag;
 
 type BCX_Permissions =
 	| "authority_edit_min"
@@ -91,7 +113,7 @@ interface CursedItemInfo {
 }
 
 interface ConditionsCategoryKeys {
-	curses: string;
+	curses: AssetGroupName;
 	rules: BCX_Rule;
 	commands: BCX_Command;
 }
@@ -179,11 +201,11 @@ interface ConditionsConditionPublicData<category extends ConditionsCategories = 
 	addedBy?: number;
 }
 
-type ConditionsCategoryRecord<category extends ConditionsCategories = ConditionsCategories> = Record<ConditionsCategoryKeys[category], ConditionsConditionData<category>>;
-type ConditionsCategoryPublicRecord<category extends ConditionsCategories = ConditionsCategories> = Record<ConditionsCategoryKeys[category], ConditionsConditionPublicData<category>>;
+type ConditionsCategoryRecord<category extends ConditionsCategories = ConditionsCategories> = Partial<Record<ConditionsCategoryKeys[category], ConditionsConditionData<category>>>;
+type ConditionsCategoryPublicRecord<category extends ConditionsCategories = ConditionsCategories> = Partial<Record<ConditionsCategoryKeys[category], ConditionsConditionPublicData<category>>>;
 
 interface ConditionsCategoryData<category extends ConditionsCategories = ConditionsCategories> {
-	conditions: Record<string, ConditionsConditionData<category>>;
+	conditions: Partial<Record<ConditionsCategoryKeys[category], ConditionsConditionData<category>>>;
 	/** List of limited/blocked conditions; defaults to normal */
 	limits: { [P in ConditionsCategoryKeys[category]]?: import("./constants").ConditionsLimit };
 	requirements: ConditionsConditionRequirements;
@@ -760,7 +782,7 @@ interface RoomTemplate {
 	Name: string;
 	Description: string;
 	Background: string;
-	Language: string;
+	Language: ChatRoomLanguage;
 	Limit: string;
 	Admin: number[];
 	Game: ChatRoomGame;

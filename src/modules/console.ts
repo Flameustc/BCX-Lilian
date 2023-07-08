@@ -1,5 +1,5 @@
 import { allowMode, developmentMode, setAllowMode, setDevelopmentMode } from "../utilsClub";
-import { hookFunction, patchFunction } from "../patching";
+import { hookFunction } from "../patching";
 import { j_WardrobeExportSelectionClothes, j_WardrobeImportSelectionClothes } from "./wardrobe";
 import { InvisibilityEarbuds } from "./clubUtils";
 import { BaseModule } from "./_BaseModule";
@@ -11,6 +11,7 @@ import { debugGenerateReport, debugSetLogServerMessages, showErrorOverlay } from
 import { VERSION } from "../config";
 import { ModAPI } from "./console_modApi";
 import { BCX_VERSION_PARSED } from "../utils";
+import { getCurrentSubscreen } from "./gui";
 
 import bcModSDK from "bondage-club-mod-sdk";
 import { cloneDeep } from "lodash-es";
@@ -143,6 +144,10 @@ class ConsoleInterface implements BCX_ConsoleInterface {
 		}
 		return Object.freeze(new ModAPI(modName));
 	}
+
+	inBcxSubscreen(): boolean {
+		return getCurrentSubscreen() != null;
+	}
 }
 
 export const consoleInterface: ConsoleInterface = Object.freeze(new ConsoleInterface());
@@ -151,23 +156,6 @@ export class ModuleConsole extends BaseModule {
 	load() {
 		window.bcx = consoleInterface;
 
-		patchFunction("ChatRoomMessageDefaultMetadataExtractor", {
-			"asset.DynamicDescription(character).toLowerCase()": `( bcx.isDevel ? asset.Description : asset.DynamicDescription(character).toLowerCase() )`,
-		});
-		patchFunction("ChatRoomGetFocusGroupSubstitutions", {
-			"DialogActualNameForGroup(targetCharacter, focusGroup).toLowerCase()": `( bcx.isDevel ? focusGroup.Description : DialogActualNameForGroup(targetCharacter, focusGroup).toLowerCase() )`,
-		});
-
-		for (let i = 0; i < ChatRoomMessageExtractors.length; i++) {
-			if (ChatRoomMessageExtractors[i] === bcModSDK.getPatchingInfo().get("ChatRoomMessageDefaultMetadataExtractor")?.original) {
-				ChatRoomMessageExtractors[i] = ChatRoomMessageDefaultMetadataExtractor;
-			}
-		}
-
-		patchFunction("ExtendedItemDrawButton", {
-			"DialogFindPlayer(DialogPrefix + Option.Name)": `( bcx.isDevel ? JSON.stringify(Option.Property.Type) : DialogFindPlayer(DialogPrefix + Option.Name) )`,
-		});
-
 		hookFunction("DialogDrawItemMenu", 0, (args, next) => {
 			if (developmentMode) {
 				DialogTextDefault = (args[0] as Character).FocusGroup?.Description || "";
@@ -175,44 +163,9 @@ export class ModuleConsole extends BaseModule {
 			return next(args);
 		});
 
-		patchFunction("DialogDrawPoseMenu", {
-			'"Icons/Poses/" + PoseGroup[P].Name + ".png"': `"Icons/Poses/" + PoseGroup[P].Name + ".png", ( bcx.isDevel ? PoseGroup[P].Name : undefined )`,
-		});
-
-		hookFunction("DialogDrawExpressionMenu", 0, (args, next) => {
-			next(args);
-			if (developmentMode) {
-				for (let I = 0; I < DialogFacialExpressions.length; I++) {
-					const FE = DialogFacialExpressions[I];
-					const OffsetY = 185 + 100 * I;
-
-					if (MouseIn(20, OffsetY, 90, 90)) {
-						DrawText(JSON.stringify(FE.Group), 300, 950, "White");
-					}
-
-					if (I === DialogFacialExpressionsSelected) {
-						for (let j = 0; j < FE.ExpressionList.length; j++) {
-							const EOffsetX = 155 + 100 * (j % 3);
-							const EOffsetY = 185 + 100 * Math.floor(j / 3);
-							if (MouseIn(EOffsetX, EOffsetY, 90, 90)) {
-								DrawText(JSON.stringify(FE.ExpressionList[j]), 300, 950, "White");
-							}
-						}
-					}
-				}
-			}
-		});
-
 		DialogSelfMenuOptions.forEach(opt => {
 			if (opt.Name === "Pose") {
 				opt.IsAvailable = () => true;
-				opt.Draw = function () {
-					return DialogDrawPoseMenu();
-				};
-			} else if (opt.Name === "Expression") {
-				opt.Draw = function () {
-					return DialogDrawExpressionMenu();
-				};
 			}
 		});
 	}
