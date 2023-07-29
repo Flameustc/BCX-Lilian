@@ -1,7 +1,7 @@
 import { ConditionsLimit, ModuleCategory } from "../constants";
 import { registerRule, RuleType, RuleState } from "../modules/rules";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
-import { patchFunction, hookFunction, trackFunction } from "../patching";
+import { patchFunction, hookFunction, trackFunction, callOriginal } from "../patching";
 import { ChatRoomActionMessage, getCharacterName, InfoBeep } from "../utilsClub";
 import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { getAllCharactersInRoom, registerEffectBuilder } from "../characters";
@@ -650,7 +650,7 @@ export function initRules_bc_alter() {
 			// 	}
 			// 	return next(args);
 			// }, ModuleCategory.Rules);
-			hookFunction("ActivitySetArousalTimer",	0, (args, next) => {
+			hookFunction("ActivitySetArousalTimer",	2, (args, next) => {
 				const C = args[0] as Character;
 				const activity = args[1] as Activity;
 				const zone = args[2] as string;
@@ -659,7 +659,7 @@ export function initRules_bc_alter() {
 					const overflow = factor + C.ArousalSettings.Progress + Math.round(C.ArousalSettings.ProgressTimer / 2) - 100;
 					desperationLevel = Math.max(desperationLevel, overflow + Math.round(desperationLevel / 2));
 				}
-				return next(args);
+				return callOriginal("ActivitySetArousalTimer", args);	// skip other arousal and orgasm control such as LSCG
 			}, ModuleCategory.Rules);
 			hookFunction("PreferenceGetZoneOrgasm", 0, (args, next) => {
 				const C = args[0] as Character;
