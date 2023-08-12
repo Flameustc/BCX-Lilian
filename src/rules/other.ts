@@ -542,15 +542,15 @@ export function initRules_other() {
 						lastArousalData.zone = group ? convertGroupToZone(group.Name) : undefined;
 						lastArousalData.item = assetEntry ? Asset.find((x) => x.Description.toLowerCase() === assetEntry.Text) : undefined;
 					} else if (data.Type === "Activity") {
-						// const sourceEntry = data.Dictionary.find((x) => typeof (x as any).SourceCharacter === "number") as SourceCharacterDictionaryEntry | undefined;
-						// const source = sourceEntry ? getChatroomCharacter(sourceEntry.SourceCharacter) : null;
-						// const targetEntry = data.Dictionary.find((x) => typeof (x as any).TargetCharacter === "number") as TargetCharacterDictionaryEntry | undefined;
-						// const target = targetEntry ? getChatroomCharacter(targetEntry.TargetCharacter) : null;
-						const sourceEntry = data.Dictionary.find((x) => (x as any).Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
-						const source = sourceEntry ? getChatroomCharacter(sourceEntry.MemberNumber)?.Character : undefined;
-						const targetEntry = data.Dictionary.find((x) => (typeof (x as any).Tag === "string")
-								&& ["TargetCharacter", "TargetCharacterName", "DestinationCharacter", "DestinationCharacterName"].includes((x as any).Tag as string)) as CharacterReferenceDictionaryEntry | undefined;
-						const target = targetEntry ? getChatroomCharacter(targetEntry.MemberNumber)?.Character : undefined;
+						const sourceEntry = data.Dictionary.find((x) => typeof (x as any).SourceCharacter === "number") as SourceCharacterDictionaryEntry | undefined;
+						const source = sourceEntry ? getChatroomCharacter(sourceEntry.SourceCharacter)?.Character : undefined;
+						const targetEntry = data.Dictionary.find((x) => typeof (x as any).TargetCharacter === "number") as TargetCharacterDictionaryEntry | undefined;
+						const target = targetEntry ? getChatroomCharacter(targetEntry.TargetCharacter)?.Character : undefined;
+						// const sourceEntry = data.Dictionary.find((x) => (x as any).Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
+						// const source = sourceEntry ? getChatroomCharacter(sourceEntry.MemberNumber)?.Character : undefined;
+						// const targetEntry = data.Dictionary.find((x) => (typeof (x as any).Tag === "string")
+						// 		&& ["TargetCharacter", "TargetCharacterName", "DestinationCharacter", "DestinationCharacterName"].includes((x as any).Tag as string)) as CharacterReferenceDictionaryEntry | undefined;
+						// const target = targetEntry ? getChatroomCharacter(targetEntry.MemberNumber)?.Character : undefined;
 						const activityEntry = data.Dictionary.find((x) => typeof (x as any).ActivityName === "string") as ActivityNameDictionaryEntry | undefined;
 						const activity = activityEntry ? AssetGetActivity(Player.AssetFamily, activityEntry.ActivityName) : undefined;
 						const groupEntry = data.Dictionary.find((x) => typeof (x as any).FocusGroupName === "string") as FocusGroupDictionaryEntry | undefined;
