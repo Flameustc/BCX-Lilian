@@ -12,7 +12,7 @@ function checkMessageForSounds(sounds: string[], message: string, allowPartialMa
 	for (let sound of sounds) {
 		sound = sound.toLocaleLowerCase();
 		let ok = true;
-		let i = 0;
+		let i = -1;
 		let fullMatch = allowPartialMatch;
 		for (const c of message) {
 			if (/\p{L}/igu.test(c)) {
@@ -98,7 +98,7 @@ export function initRules_bc_speech_control() {
 		},
 		load(state) {
 			hookFunction("ChatRoomShouldBlockGaggedOOCMessage", 2, (args, next) => {
-				if (state.isEnforced && ChatRoomTargetMemberNumber !== null && !(args[0] as string).includes("(")) return false;
+				if (state.isEnforced && ChatRoomTargetMemberNumber !== null && !args[0].includes("(")) return false;
 				return next(args);
 			}, ModuleCategory.Rules);
 		},
@@ -928,7 +928,7 @@ export function initRules_bc_speech_control() {
 			const nextGreet: Map<number, number> = new Map();
 			hookFunction("ChatRoomSyncMemberLeave", 2, (args, next) => {
 				next(args);
-				const R = args[0] as Record<string, number>;
+				const R = args[0];
 				if (nextGreet.has(R.SourceMemberNumber)) {
 					nextGreet.set(R.SourceMemberNumber, Date.now() + GREET_DELAY);
 				}
@@ -937,7 +937,7 @@ export function initRules_bc_speech_control() {
 				const size = ChatRoomCharacter.length;
 				next(args);
 				if (state.customData && state.isEnforced && size < ChatRoomCharacter.length) {
-					const C = args[0] as Character;
+					const C = args[0];
 					if (C.MemberNumber !== undefined &&
 						nextGreet.has(C.MemberNumber) &&
 						nextGreet.get(C.MemberNumber)! < Date.now()
@@ -1178,7 +1178,7 @@ export function initRules_bc_speech_control() {
 		},
 		load(state) {
 			hookFunction("SpeechGarble", 2, (args, next) => {
-				const C = args[0] as Character;
+				const C = args[0];
 				if (!state.isEnforced ||
 					(
 						!C.CanTalk() &&
@@ -1187,7 +1187,7 @@ export function initRules_bc_speech_control() {
 					)
 				)
 					return next(args);
-				return (args[1] as string).replace(/\([^)]+\)?|\p{L}+/gmui, (word) => {
+				return args[1].replace(/\([^)]+\)?|\p{L}+/gmui, (word) => {
 					if (word.startsWith("(")) {
 						return word;
 					} if (state.customData?.randomUnderstanding && Math.random() < 0.25) {
@@ -1234,7 +1234,7 @@ export function initRules_bc_speech_control() {
 		load(state) {
 			hookFunction("SpeechGetTotalGagLevel", 0, (args, next) => {
 				const gagLevel: number = next(args);
-				if (!state.isEnforced || !state.customData?.gagLevel || !(args[0] as Character).IsPlayer()) {
+				if (!state.isEnforced || !state.customData?.gagLevel || !args[0].IsPlayer()) {
 					return gagLevel;
 				} else {
 					// Use the rule-specified gag level as a lower bound in case the player is wearing an actual gag

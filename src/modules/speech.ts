@@ -112,9 +112,11 @@ function processMsg(msg: SpeechMessageInfo): string | null {
 		return msg.rawMessage;
 	}
 
+	const targetCharacter = ChatRoomCharacter.find(C => C.MemberNumber === ChatRoomTargetMemberNumber);
 	if (
 		(msg.type === "Chat" || msg.type === "Whisper") &&
-		ChatRoomShouldBlockGaggedOOCMessage(msg.originalMessage, ChatRoomCharacter.find(C => C.MemberNumber === ChatRoomTargetMemberNumber))
+		targetCharacter != null &&
+		ChatRoomShouldBlockGaggedOOCMessage(msg.originalMessage, targetCharacter)
 	) {
 		// The message is to be blocked by BC, block it ourselves to prevent it from being deleted
 		ChatRoomMessage({ Content: "ChatRoomBlockGaggedOOC", Type: "Action", Sender: Player.MemberNumber! });
@@ -203,7 +205,7 @@ export class ModuleSpeech extends BaseModule {
 		} | null = null;
 
 		hookFunction("CommandParse", 5, (args, next) => {
-			const msg = (args[0] as string).trim();
+			const msg = args[0].trim();
 			if (msg) {
 				const info = parseMsg(msg);
 				if (info) {
@@ -236,7 +238,7 @@ export class ModuleSpeech extends BaseModule {
 		});
 
 		//#region Antigarble for pre-garbled whispers
-		hookFunction("ServerSend", 1, (args, next) => {
+		hookFunction("ServerSend", 1, (args: any, next) => {
 			const data = args[1];
 			if (args[0] === "ChatRoomChat" &&
 				currentlyProcessedMessage &&
@@ -261,7 +263,7 @@ export class ModuleSpeech extends BaseModule {
 				typeof data.Content === "string" &&
 				Array.isArray(data.Dictionary)
 			) {
-				const orig = data.Dictionary.find(i => isObject(i) && i.Tag === "BCX_ORIGINAL_MESSAGE" && typeof i.Text === "string");
+				const orig: any = data.Dictionary.find((i: unknown) => isObject(i) && i.Tag === "BCX_ORIGINAL_MESSAGE" && typeof i.Text === "string");
 				if (orig && data.Content !== orig.Text) {
 					if (antigarble === 2) {
 						data.Content = orig.Text;
@@ -278,7 +280,7 @@ export class ModuleSpeech extends BaseModule {
 		hookFunction("CommandParse", 0, (args, next) => next(args));
 
 		hookFunction("ChatRoomSendEmote", 5, (args, next) => {
-			const rawMessage = args[0] as string;
+			const rawMessage = args[0];
 			let msg = rawMessage;
 			if (Player.ChatSettings?.MuStylePoses && msg.startsWith(":")) msg = msg.substring(1);
 			else {
@@ -338,23 +340,6 @@ export class ModuleSpeech extends BaseModule {
 			if (typeof res === "string" && res !== args[1] && antigarble === 1) res += ` <> ${args[1]}`;
 			return res;
 		});
-		//#endregion
-
-		//#region Item specific fixes
-
-		// Teach shock collar and futuristic gag, that commands are OOC
-		if (typeof (window as any).InventoryItemNeckAccessoriesCollarAutoShockUnitDetectSpeech === "function") {
-			hookFunction("InventoryItemNeckAccessoriesCollarAutoShockUnitDetectSpeech", 10, (args, next) => {
-				if (ChatRoomLastMessage &&
-					ChatRoomLastMessage.length > 0 &&
-					ChatRoomLastMessage[ChatRoomLastMessage.length - 1].startsWith(".") &&
-					!ChatRoomLastMessage[ChatRoomLastMessage.length - 1].startsWith("..")
-				)
-					return false;
-				return next(args);
-			});
-		}
-
 		//#endregion
 	}
 }

@@ -9,6 +9,7 @@ import { setup as setupDevServer, teardown as teardownDevServer } from "jest-dev
 import { MongoMemoryServer } from "mongodb-memory-server-core";
 
 import { TestContext, getConfig } from "./config";
+import { wait } from "../utils";
 
 function run(command: string, args: string[] = [], options: SpawnSyncOptions = {}): void {
 	const { error } = spawnSync(command, args, {
@@ -70,7 +71,7 @@ export default async (_jestConfig: JestConfig) => {
 		port = await getPortPromise({ host: "127.0.0.1", port: port + 1 });
 
 		const server = await setupDevServer({
-			command: `npm run start`,
+			command: `node --unhandled-rejections=throw app.js`,
 			launchTimeout: 15000,
 			debug: true,
 			port,
@@ -90,6 +91,10 @@ export default async (_jestConfig: JestConfig) => {
 
 		cleanup.push(async () => {
 			await teardownDevServer(server);
+			await wait(1_000);
+			server.forEach((s) => {
+				s.kill("SIGKILL");
+			});
 		});
 	}
 
@@ -103,7 +108,7 @@ export default async (_jestConfig: JestConfig) => {
 		}
 
 		const BCXPath = "dist";
-		const BCXLoader = path.join(BCXPath, "bcx.dev.js");
+		const BCXLoader = path.join(BCXPath, "bcx.js");
 		if (!fs.existsSync(BCXLoader) || !fs.statSync(BCXLoader).isFile()) {
 			throw new Error(`Did not find built BCX at ${BCPath}, please build BCX first`);
 		}
@@ -123,7 +128,7 @@ export default async (_jestConfig: JestConfig) => {
 		const server = app.listen(port);
 
 		process.env.HTTP_SERVER_BC_ADDRESS = `http://localhost:${port}/Bondage-College/BondageClub`;
-		process.env.HTTP_SERVER_BCX_ADDRESS = `http://localhost:${port}/BCX/bcx.dev.js`;
+		process.env.HTTP_SERVER_BCX_ADDRESS = `http://localhost:${port}/BCX/bcx.js`;
 
 		cleanup.push(async () => {
 			await new Promise((resolve) => {

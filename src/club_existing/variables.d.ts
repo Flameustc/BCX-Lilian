@@ -275,6 +275,7 @@ declare var PreferenceDifficultyAccept: boolean;
 declare var PreferenceSubscreen: string;
 declare function PreferenceArousalAtLeast(C: Character, Level: string): boolean;
 declare function PreferenceGetActivityFactor(C: Character, Type: string, Self: boolean): number;
+declare function PreferenceGetZoneOrgasm(C: Character, ZoneName: AssetGroupName): boolean;
 
 // Login.js
 declare function LoginMistressItems(): void;
