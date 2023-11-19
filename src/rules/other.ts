@@ -4,23 +4,17 @@ import { ConditionsLimit, ModuleCategory } from "../constants";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
 import { registerWhisperCommand } from "../modules/commands";
 import { registerRule, RuleState, RuleType } from "../modules/rules";
-import { hookFunction, patchFunction } from "patching";
+import { hookFunction, patchFunction } from "../patching";
 import { getChatroomCharacter } from "../characters";
 import { formatTimeInterval, isObject } from "../utils";
 import { ChatRoomSendLocal } from "../utilsClub";
 import { ReplaceTrackData, TrackData } from "../track";
 
-export type TimerData = {
-	asset_name: string;
-	group_name: AssetGroupName;
-	remove_timer: number;
-};
-
 export type ArousalData = {
 	source?: Character;
 	target?: Character;
 	activity?: Activity | string;
-	zone?: string;
+	zone?: AssetGroupItemName;
 	item?: Asset | string;
 };
 export const lastArousalData: ArousalData = {};
@@ -370,7 +364,7 @@ export function initRules_other() {
 		}
 	};
 
-	const convertGroupToZone = (groupName: AssetGroupName) => {
+	const convertGroupToZone = (groupName: AssetGroupItemName) => {
 		const sourceGroup = AssetGroupGet(Player.AssetFamily, groupName)?.MirrorActivitiesFrom;
 		return sourceGroup || groupName;
 	};
@@ -394,7 +388,7 @@ export function initRules_other() {
 	};
 
 	const translate = (str: string, type: DictionaryType): string => {
-		return TranslationString(str, translationDicts[type], "");
+		return TranslationString(str, translationDicts[type]);
 	};
 
 	registerRule("other_track_status", {
@@ -530,7 +524,7 @@ export function initRules_other() {
 			// }, ModuleCategory.Rules);
 			// Record all information when action/activity is from other characters
 			hookFunction("ChatRoomMessageRunExtractors", 0, (args, next) => {
-				const data = args[0] as IChatRoomMessage;
+				const data = args[0];
 				if (data && data.Type && data.Dictionary && Array.isArray(data.Dictionary)) {
 					if (data.Sender === Player.MemberNumber && data.Type === "Action" && data.Content.startsWith("ChatRoomStimulationMessage")) {
 						const groupEntry = data.Dictionary.find((x) => (x as any).Tag === "AssetGroup") as TextDictionaryEntry | undefined;
@@ -539,17 +533,17 @@ export function initRules_other() {
 						lastArousalData.target = Player;
 						lastArousalData.activity = "stimulate";
 						const group = AssetGroup.find((x) => x.Description.toLowerCase() === groupEntry?.Text);
-						lastArousalData.zone = group ? convertGroupToZone(group.Name) : undefined;
+						lastArousalData.zone = group ? convertGroupToZone(group.Name as AssetGroupItemName) : undefined;
 						lastArousalData.item = assetEntry ? Asset.find((x) => x.Description.toLowerCase() === assetEntry.Text) : undefined;
 					} else if (data.Type === "Activity") {
 						const sourceEntry = data.Dictionary.find((x) => typeof (x as any).SourceCharacter === "number") as SourceCharacterDictionaryEntry | undefined;
 						const source = sourceEntry ? getChatroomCharacter(sourceEntry.SourceCharacter)?.Character : undefined;
 						const targetEntry = data.Dictionary.find((x) => typeof (x as any).TargetCharacter === "number") as TargetCharacterDictionaryEntry | undefined;
 						const target = targetEntry ? getChatroomCharacter(targetEntry.TargetCharacter)?.Character : undefined;
-						// const sourceEntry = data.Dictionary.find((x) => (x as any).Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
+						// const sourceEntry = data.Dictionary.find((x) => x.Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
 						// const source = sourceEntry ? getChatroomCharacter(sourceEntry.MemberNumber)?.Character : undefined;
-						// const targetEntry = data.Dictionary.find((x) => (typeof (x as any).Tag === "string")
-						// 		&& ["TargetCharacter", "TargetCharacterName", "DestinationCharacter", "DestinationCharacterName"].includes((x as any).Tag as string)) as CharacterReferenceDictionaryEntry | undefined;
+						// const targetEntry = data.Dictionary.find((x) => (typeof x.Tag === "string")
+						// 		&& ["TargetCharacter", "TargetCharacterName", "DestinationCharacter", "DestinationCharacterName"].includes(x.Tag as string)) as CharacterReferenceDictionaryEntry | undefined;
 						// const target = targetEntry ? getChatroomCharacter(targetEntry.MemberNumber)?.Character : undefined;
 						const activityEntry = data.Dictionary.find((x) => typeof (x as any).ActivityName === "string") as ActivityNameDictionaryEntry | undefined;
 						const activity = activityEntry ? AssetGetActivity(Player.AssetFamily, activityEntry.ActivityName) : undefined;
@@ -631,13 +625,13 @@ export function initRules_other() {
 			// hookFunction("ChatRoomPublishCustomAction", 11, (args, next) => {
 			// 	const dictionary = args[2] as ChatMessageDictionary;
 			// 	if (Array.isArray(dictionary)) {
-			// 		// const sourceEntry = dictionary.find((x) => typeof (x as any).SourceCharacter === "number") as SourceCharacterDictionaryEntry | undefined;
-			// 		// const targetEntry = dictionary.find((x) => typeof (x as any).TargetCharacter === "number") as TargetCharacterDictionaryEntry | undefined;
-			// 		const sourceEntry = dictionary.find((x) => (x as any).Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
-			// 		const targetEntry = dictionary.find((x) => (x as any).Tag === "DestinationCharacter") as CharacterReferenceDictionaryEntry | undefined;
-			// 		const activityEntry = dictionary.find((x) => typeof (x as any).ActivityName === "string") as ActivityNameDictionaryEntry | undefined;
-			// 		const groupEntry = dictionary.find((x) => typeof (x as any).FocusGroupName === "string") as FocusGroupDictionaryEntry | undefined;
-			// 		const assetEntry = dictionary.find((x) => typeof (x as any).AssetName === "string") as AssetReferenceDictionaryEntry | undefined;
+			// 		// const sourceEntry = dictionary.find((x) => typeof x.SourceCharacter === "number") as SourceCharacterDictionaryEntry | undefined;
+			// 		// const targetEntry = dictionary.find((x) => typeof x.TargetCharacter === "number") as TargetCharacterDictionaryEntry | undefined;
+			// 		const sourceEntry = dictionary.find((x) => x.Tag === "SourceCharacter") as CharacterReferenceDictionaryEntry | undefined;
+			// 		const targetEntry = dictionary.find((x) => x.Tag === "DestinationCharacter") as CharacterReferenceDictionaryEntry | undefined;
+			// 		const activityEntry = dictionary.find((x) => typeof x.ActivityName === "string") as ActivityNameDictionaryEntry | undefined;
+			// 		const groupEntry = dictionary.find((x) => typeof x.FocusGroupName === "string") as FocusGroupDictionaryEntry | undefined;
+			// 		const assetEntry = dictionary.find((x) => typeof x.AssetName === "string") as AssetReferenceDictionaryEntry | undefined;
 			// 		// lastArousalData.source = sourceEntry ? getChatroomCharacter(sourceEntry.SourceCharacter)?.Character : undefined;
 			// 		// lastArousalData.target = targetEntry ? getChatroomCharacter(targetEntry.TargetCharacter)?.Character : undefined;
 			// 		lastArousalData.source = sourceEntry ? getChatroomCharacter(sourceEntry.MemberNumber)?.Character : undefined;
@@ -712,14 +706,14 @@ export function initRules_other() {
 			// }, ModuleCategory.Rules);
 			// Override vanilla function to use new arousal zone
 			hookFunction("ActivityRunSelf", 0, (args, next) => {
-				const source = args[0] as Character;
-				const target = args[1] as Character;
-				const activity = args[2] as Activity;
+				const source = args[0];
+				const target = args[1];
+				const activity = args[2];
 				if (((Player.ArousalSettings?.Active === "Hybrid") || (Player.ArousalSettings?.Active === "Automatic")) && (source.ID === 0) && (target.ID !== 0)) {
 					let factor = (PreferenceGetActivityFactor(Player, activity.Name, false) * 5) - 10;
 					factor += Math.floor((Math.random() * 8));
 					if (target.IsLoverOfPlayer()) factor += Math.floor((Math.random() * 8));
-					ActivitySetArousalTimer(Player, activity, lastArousalData.zone || "undefined", factor);
+					ActivitySetArousalTimer(Player, activity, lastArousalData.zone || "ItemHidden", factor);
 				}
 			}, ModuleCategory.Rules);
 			loadDict("Asset", "Assets/Female3DCG/Female3DCG_CN.txt");
@@ -727,7 +721,7 @@ export function initRules_other() {
 		},
 		load(state) {
 			hookFunction("ActivityOrgasmStart", 0, (args, next) => {
-				const C = args[0] as Character;
+				const C = args[0];
 				if (state.inEffect && C.ID === 0 && (typeof ActivityOrgasmRuined === "undefined" || !ActivityOrgasmRuined)) {
 					const change = Math.floor(Date.now() - lastUpdate);
 					lastTrackTime = Date.now();
@@ -749,10 +743,10 @@ export function initRules_other() {
 					diffData.last_orgasm_data.target_number = lastArousalData.target?.MemberNumber;
 					const activity = (typeof lastArousalData.activity === "string") ? lastArousalData.activity : lastArousalData.activity?.Name;
 					if (activity) {
-						if (typeof lastArousalData.activity === "object" && lastArousalData.activity.CustomData) {
-							diffData.last_orgasm_data.activity = "CustomData:" + lastArousalData.activity.CustomData;
+						if (typeof lastArousalData.activity === "object" && (lastArousalData.activity as any).CustomData) {
+							diffData.last_orgasm_data.activity = "CustomData:" + (lastArousalData.activity as any).CustomData;
 						} else {
-							const entry = ActivityDictionary.find((x) => x[0] === "Activity" + activity);
+							const entry = ActivityDictionary?.find((x) => x[0] === "Activity" + activity);
 							if (entry && Array.isArray(entry) && entry.length >= 2) {
 								diffData.last_orgasm_data.activity = translate(entry[1], "Activity");
 							} else {
@@ -770,7 +764,7 @@ export function initRules_other() {
 				return next(args);
 			}, ModuleCategory.Rules);
 			hookFunction("ActivityOrgasmStop", 0, (args, next) => {
-				const C = args[0] as Character;
+				const C = args[0];
 				if (state.inEffect && C.ID === 0 && ActivityOrgasmRuined) {
 					diffData.ruined_count += 1;
 					diffData.no_ruined_count += 1;
@@ -795,110 +789,6 @@ export function initRules_other() {
 				lastTrackTime = Date.now();
 			} else {
 				updateTrackData(state, true);
-			}
-		}
-	});
-
-	let lastTimerUpdate: number = 0;
-	registerRule("other_timer_lock", {
-		name: "Advanced timer lock",
-		type: RuleType.Other,
-		enforceable: false,
-		loggable: false,
-		longDescription: "This rule changes default behavior of all timer locks on PLAYER_NAME.",
-		internalDataValidate: (v) => v !== undefined,
-		internalDataDefault: () => [],
-		defaultLimit: ConditionsLimit.blocked,
-		dataDefinition: {
-			minimumPermittedRole: {
-				type: "roleSelector",
-				default: AccessLevel.public,
-				description: "Minimum role able to modify remaining time:"
-			}
-		},
-		load(state) {
-			hookFunction("TimerInventoryRemove", 5, (args, next) => {
-				if (state.condition && state.condition.active && state.internalData !== undefined) {
-					const internalData = state.internalData;
-					let changed = false;
-					for (let i = internalData.length - 1; i >= 0; i--) {
-						const item = InventoryGet(Player, internalData[i].group_name);
-						if (item && item.Asset.Name === internalData[i].asset_name && item.Property && typeof item.Property.RemoveTimer === "number") {
-							let timer = internalData[i].remove_timer;
-							const lock = InventoryGetLock(item);
-							if (lock) {
-								timer = Math.min(timer, lock.Asset.MaxTimer * 1000);
-							}
-							item.Property.RemoveTimer = Math.round(CurrentTime + timer);
-						} else {
-							internalData.splice(i, 1);
-							changed = true;
-						}
-					}
-					for (const item of Player.Appearance) {
-						if (item.Property && typeof item.Property.RemoveTimer === "number" && !internalData.some((x) => x.group_name === item.Asset.Group.Name)) {
-							internalData.push({
-								asset_name: item.Asset.Name,
-								group_name: item.Asset.Group.Name,
-								remove_timer: item.Property.RemoveTimer - CurrentTime
-							});
-							changed = true;
-						}
-					}
-					if (changed) {
-						state.internalData = internalData;
-					}
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
-			hookFunction("ValidationResolveLockModification", 1, (args, next) => {
-				const previousItem = args[0] as Item;
-				const newItem = args[1] as Item;
-				const params = args[2] as AppearanceUpdateParameters;
-				const previousProperty = previousItem.Property || {};
-				const newProperty = newItem.Property = newItem.Property || {};
-				if (state.condition && state.condition.active && state.customData && state.internalData !== undefined && typeof newProperty.RemoveTimer === "number" && previousProperty.RemoveTimer !== newProperty.RemoveTimer) {
-					if (getCharacterAccessLevel(params.sourceMemberNumber) > state.customData.minimumPermittedRole) {
-						ValidationCopyProperty(previousProperty, newProperty, "RemoveTimer");
-						next(args);
-						return false;
-					}
-					const internalData = state.internalData;
-					const idx = internalData.findIndex((x) => x.group_name === newItem.Asset.Group.Name);
-					if (idx >= 0) {
-						internalData[idx].remove_timer = newProperty.RemoveTimer - CurrentTime;
-					} else {
-						internalData.push({
-							asset_name: newItem.Asset.Name,
-							group_name: newItem.Asset.Group.Name,
-							remove_timer: newProperty.RemoveTimer - CurrentTime
-						});
-					}
-					state.internalData = internalData;
-				}
-				return next(args);
-			}, ModuleCategory.Rules);
-			lastTimerUpdate = Date.now();
-		},
-		tick(state) {
-			if (state.inEffect && state.internalData !== undefined) {
-				const change = Math.floor(Date.now() - lastTimerUpdate);
-				const internalData = state.internalData;
-				internalData.forEach((x) => x.remove_timer -= change);
-				state.internalData = internalData;
-				lastTimerUpdate = Date.now();
-			}
-			return false;
-		},
-		stateChange(state, newState) {
-			if (newState) {
-				lastTimerUpdate = Date.now();
-			} else if (state.internalData !== undefined) {
-				const change = Math.floor(Date.now() - lastTimerUpdate);
-				const internalData = state.internalData;
-				internalData.forEach((x) => x.remove_timer -= change);
-				state.internalData = internalData;
-				lastTimerUpdate = Date.now();
 			}
 		}
 	});

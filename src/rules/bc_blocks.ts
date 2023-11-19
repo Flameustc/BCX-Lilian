@@ -6,7 +6,7 @@ import { isNModClient } from "../utilsClub";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
 import { getAllCharactersInRoom } from "../characters";
 import { GetDialogMenuButtonArray } from "../modules/dialog";
-import { manipulateAntiblind } from "modules/clubUtils";
+import { manipulateAntiblind } from "../modules/clubUtils";
 
 export function initRules_bc_blocks() {
 	const NMod = isNModClient();

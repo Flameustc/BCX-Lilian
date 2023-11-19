@@ -5,7 +5,7 @@ import { dictionaryProcess, formatTimeInterval } from "../utils";
 import { ChatRoomActionMessage, ChatRoomSendLocal, InfoBeep } from "../utilsClub";
 import backgroundList from "../generated/backgroundList.json";
 import { RulesGetRuleState } from "../modules/rules";
-import { ForceOrgasm } from "rules/bc_alter";
+import { ForceOrgasm } from "../rules/bc_alter";
 
 export function initCommands_definitions() {
 

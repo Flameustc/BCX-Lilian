@@ -1,4 +1,4 @@
-import { RulesGetRuleState } from "modules/rules";
+import { RulesGetRuleState } from "./modules/rules";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatTimeIntervalCN } from "utils";
 

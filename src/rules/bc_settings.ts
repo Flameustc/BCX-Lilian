@@ -1,10 +1,10 @@
 import { ConditionsLimit, MiscCheat } from "../constants";
-import { AccessLevel, getCharacterAccessLevel } from "modules/authority";
+import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
 import { cheatIsEnabled, cheatSetEnabled } from "../modules/miscPatches";
 import { registerRule, RuleType } from "../modules/rules";
-import { hookFunction } from "patching";
-import { dictionaryProcess } from "utils";
-import { ChatRoomActionMessage, InfoBeep } from "utilsClub";
+import { hookFunction } from "../patching";
+import { dictionaryProcess } from "../utils";
+import { ChatRoomActionMessage, InfoBeep } from "../utilsClub";
 
 export function initRules_bc_settings() {
 

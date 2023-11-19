@@ -5,7 +5,7 @@ import { hookFunction } from "../patching";
 import { registerSpeechHook, SpeechHookAllow, SpeechMessageInfo } from "../modules/speech";
 import { ChatroomCharacter, getAllCharactersInRoom } from "../characters";
 import { Command_fixExclamationMark, Command_pickAutocomplete } from "../modules/commands";
-import { ReplaceTrackData } from "track";
+import { ReplaceTrackData } from "../track";
 
 export function initCommands_speech() {
 	registerCommand("forcesay", {

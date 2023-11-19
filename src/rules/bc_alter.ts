@@ -637,7 +637,7 @@ export function initRules_bc_alter() {
 				if (state.inEffect) {
 					args[0] = lastArousalData.source || args[0];
 					args[1] = lastArousalData.target || args[1];
-					args[2] = lastArousalData.activity || args[2];
+					args[2] = typeof lastArousalData.activity === "object" ? lastArousalData.activity : args[2];
 					args[3] = lastArousalData.zone || args[3];
 				}
 				return next(args);

@@ -328,7 +328,6 @@ type BCX_Rule =
 	// | "other_restrict_console_usage"
 	| "other_track_BCX_activation"
 	| "other_track_status"
-	| "other_timer_lock"
 	| "setting_item_permission"
 	| "setting_forbid_lockpicking"
 	| "setting_forbid_SP_rooms"
@@ -637,7 +636,6 @@ type RuleInternalData = {
 	other_track_BCX_activation: number;
 	other_track_time: number;
 	other_track_status: import("./track").TrackData;
-	other_timer_lock: import("./rules/other").TimerData[];
 };
 
 type RuleCustomDataTypesMap = {
