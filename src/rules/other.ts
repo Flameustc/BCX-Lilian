@@ -713,7 +713,7 @@ export function initRules_other() {
 					let factor = (PreferenceGetActivityFactor(Player, activity.Name, false) * 5) - 10;
 					factor += Math.floor((Math.random() * 8));
 					if (target.IsLoverOfPlayer()) factor += Math.floor((Math.random() * 8));
-					ActivitySetArousalTimer(Player, activity, lastArousalData.zone || "ItemHidden", factor);
+					ActivitySetArousalTimer(Player, activity, lastArousalData.zone || "ItemAddon", factor);
 				}
 			}, ModuleCategory.Rules);
 			loadDict("Asset", "Assets/Female3DCG/Female3DCG_CN.txt");

@@ -2,7 +2,7 @@ import { ConditionsLimit, ModuleCategory } from "../constants";
 import { registerRule, RuleType, RuleState } from "../modules/rules";
 import { AccessLevel, getCharacterAccessLevel } from "../modules/authority";
 import { patchFunction, hookFunction, trackFunction, callOriginal } from "../patching";
-import { ChatRoomActionMessage, getCharacterName, InfoBeep } from "../utilsClub";
+import { ChatRoomActionMessage, getCharacterName, InfoBeep, updateChatroom } from "../utilsClub";
 import { ChatroomCharacter, getChatroomCharacter } from "../characters";
 import { getAllCharactersInRoom, registerEffectBuilder } from "../characters";
 import { isObject } from "../utils";
@@ -278,9 +278,6 @@ export function initRules_bc_alter() {
 				return next(args);
 			});
 			hookFunction("ChatRoomDrawCharacter", 1, (args, next) => {
-				if (args[0])
-					return next(args);
-
 				const ChatRoomHideIconStateBackup = ChatRoomHideIconState;
 				const eyes1 = InventoryGet(Player, "Eyes");
 				const eyes2 = InventoryGet(Player, "Eyes2");
@@ -366,9 +363,6 @@ export function initRules_bc_alter() {
 				}
 			});
 			hookFunction("ChatRoomDrawCharacter", 2, (args, next) => {
-				if (args[0])
-					return next(args);
-
 				const ChatRoomHideIconStateBackup = ChatRoomHideIconState;
 				limitTop = 0;
 				limitBottom = 0;
@@ -413,23 +407,22 @@ export function initRules_bc_alter() {
 			});
 
 			hookFunction("DrawImageEx", 6, (args, next) => {
-				const Source = args[0];
+				const SourceCanvas = args[0];
 				if (inRoomDraw &&
 					(
-						ChatRoomCharacterDrawlist.some(C => C.Canvas === Source || C.CanvasBlink === Source) ||
-						CharacterCanvas.canvas === Source
+						ChatRoomCharacterDrawlist.some(C => C.Canvas === SourceCanvas || C.CanvasBlink === SourceCanvas) ||
+						TempCanvas.canvas === SourceCanvas
 					) &&
-					Source instanceof HTMLCanvasElement &&
+					SourceCanvas instanceof HTMLCanvasElement &&
 					DrawC &&
 					(!DrawC.IsPlayer() || state.customData?.affectPlayer)
 				) {
-					const Canvas = Source;
 					const CharacterCanvas = document.createElement("canvas").getContext("2d")!;
 					CharacterCanvas.canvas.width = 500;
 					CharacterCanvas.canvas.height = CanvasDrawHeight;
 
 					CharacterCanvas.globalCompositeOperation = "copy";
-					CharacterCanvas.drawImage(Canvas, 0, 0);
+					CharacterCanvas.drawImage(SourceCanvas, 0, 0);
 
 					CharacterCanvas.globalCompositeOperation = "source-atop";
 
@@ -447,7 +440,7 @@ export function initRules_bc_alter() {
 						Grad.addColorStop(GRADIENT_TIP_POINT, "#000");
 						Grad.addColorStop(1, "rgba(0,0,0,0)");
 						CharacterCanvas.fillStyle = Grad;
-						CharacterCanvas.fillRect(0, YStart, Canvas.width, SourceHeight * top);
+						CharacterCanvas.fillRect(0, YStart, SourceCanvas.width, SourceHeight * top);
 					}
 					if (bottom) {
 						const Y = YStart + (1 - bottom) * SourceHeight;
@@ -456,7 +449,7 @@ export function initRules_bc_alter() {
 						Grad.addColorStop(GRADIENT_TIP_POINT, "#000");
 						Grad.addColorStop(1, "rgba(0,0,0,0)");
 						CharacterCanvas.fillStyle = Grad;
-						CharacterCanvas.fillRect(0, Y, Canvas.width, Canvas.height - Y);
+						CharacterCanvas.fillRect(0, Y, SourceCanvas.width, SourceCanvas.height - Y);
 					}
 
 					args[0] = CharacterCanvas.canvas;
@@ -851,20 +844,9 @@ export function initRules_bc_alter() {
 					}
 				}
 				if (CurrentModule === "Online" && CurrentScreen === "ChatRoom" && !changed && hasAdmin && ChatRoomData && state.customData.removeAdminToggle) {
-					const UpdatedRoom = {
-						Name: ChatRoomData.Name,
-						Description: ChatRoomData.Description,
-						Background: ChatRoomData.Background,
-						Limit: ChatRoomData.Limit.toString(),
+					updateChatroom({
 						Admin: ChatRoomData.Admin.filter((i: number) => i !== Player.MemberNumber),
-						Ban: ChatRoomData.Ban,
-						BlockCategory: ChatRoomData.BlockCategory.slice(),
-						Game: ChatRoomGame,
-						Private: ChatRoomData.Private,
-						Locked: ChatRoomData.Locked,
-					};
-					// @ts-expect-error because of Limit being forced to a string above to please the server
-					ServerSend("ChatRoomAdmin", { MemberNumber: Player.ID, Room: UpdatedRoom, Action: "Update" });
+					});
 					changed = true;
 				}
 			}
@@ -906,12 +888,10 @@ export function initRules_bc_alter() {
 					);
 					DrawButton(1840, 450, 60, 60, "", "#ebebe4", "Icons/Small/Preference.png", "", true);
 					DrawBackNextButton(1625, 550, 275, 60, TextGet("Game" + ChatAdminGame), "#ebebe4", "", () => "", () => "", true);
-					DrawButton(1486, 728, 64, 64, "", "#ebebe4", ChatAdminPrivate ? "Icons/Checked.png" : "", "", true);
-					DrawButton(1786, 728, 64, 64, "", "#ebebe4", ChatAdminLocked ? "Icons/Checked.png" : "", "", true);
-					MainCanvas.fillStyle = "#ffff88";
-					MainCanvas.fillRect(100, 850, 1125, 70);
-					MainCanvas.strokeStyle = "Black";
-					MainCanvas.strokeRect(100, 850, 1125, 70);
+					DrawButton(1426, 728, 64, 64, "", "#ebebe4", ChatAdminPrivate ? "Icons/Checked.png" : "", "", true);
+					DrawButton(1756, 728, 64, 64, "", "#ebebe4", ChatAdminLocked ? "Icons/Checked.png" : "", "", true);
+					DrawRect(100, 850, 1125, 70, "#ffff88");
+					DrawEmptyRect(100, 850, 1125, 70, "Black");
 					DrawText("Some settings are not available due to a BCX rule.", 650, 885, "Black", "Gray");
 				}
 			});
@@ -922,8 +902,8 @@ export function initRules_bc_alter() {
 					MouseIn(1840, 450, 60, 60) ||
 					MouseIn(1300, 450, 500, 60) ||
 					MouseIn(1625, 550, 275, 60) ||
-					MouseIn(1486, 728, 64, 64) ||
-					MouseIn(1786, 728, 64, 64) ||
+					MouseIn(1426, 728, 64, 64) ||
+					MouseIn(1756, 728, 64, 64) ||
 					MouseIn(125, 770, 250, 65) ||
 					MouseIn(390, 770, 250, 65)
 				))

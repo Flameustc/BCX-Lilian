@@ -4,6 +4,7 @@ import { getChatroomCharacter } from "./characters";
 import { RelationshipsGetNickname } from "./modules/relationships";
 import { BCX_VERSION_PARSED } from "./utils";
 import { supporterStatus } from "./modules/versionCheck";
+import { BCXGlobalEventSystem } from "./event";
 
 import { omit } from "lodash-es";
 
@@ -128,6 +129,15 @@ export function ChatRoomActionMessage(msg: string, target: null | number = null,
 }
 
 export function ChatRoomSendLocal(msg: string | Node, timeout?: number, sender?: number): HTMLDivElement | null {
+	// Emit the message event asynchronously
+	BCX_setTimeout(() => {
+		BCXGlobalEventSystem.emitEvent("bcxLocalMessage", {
+			message: msg,
+			timeout,
+			sender,
+		});
+	}, 0);
+
 	// Adds the message and scrolls down unless the user has scrolled up
 	const div = document.createElement("div");
 	div.setAttribute("class", "ChatMessage ChatMessageLocalMessage");
@@ -369,10 +379,8 @@ export function itemColorsEquals(color1: null | undefined | string | string[], c
 export function showHelp(helpText: string) {
 	DrawHoverElements.push(() => {
 		MainCanvas.save();
-		MainCanvas.fillStyle = "#ffff88";
-		MainCanvas.fillRect(1000, 190, 800, 600);
-		MainCanvas.strokeStyle = "Black";
-		MainCanvas.strokeRect(1000, 190, 800, 600);
+		DrawRect(1000, 190, 800, 600, "#ffff88");
+		DrawEmptyRect(1000, 190, 800, 600, "Black");
 		MainCanvas.textAlign = "left";
 		DrawTextWrap(helpText, 1020 - 760 / 2, 210, 760, 560, "black");
 		MainCanvas.restore();
