@@ -1045,6 +1045,7 @@ export function initRules_bc_speech_control() {
 					return true;
 				}
 				return state.customData?.mandatoryWords.some(i =>
+					(/\p{Script=Han}/u.test(i) && checkMsg.match(new RegExp(`${escapeRegExp(i.trim())}`, "iu"))) ||
 					checkMsg.match(
 						new RegExp(`([^\\p{L}]|^)${escapeRegExp(i.trim())}([^\\p{L}]|$)`, "iu")
 					)
@@ -1099,6 +1100,7 @@ export function initRules_bc_speech_control() {
 					return true;
 				}
 				return state.customData?.mandatoryWords.some(i =>
+					(/\p{Script=Han}/u.test(i) && checkMsg.match(new RegExp(`${escapeRegExp(i.trim())}`, "iu"))) ||
 					checkMsg.match(
 						new RegExp(`([^\\p{L}]|^)${escapeRegExp(i.trim())}([^\\p{L}]|$)`, "iu")
 					)
