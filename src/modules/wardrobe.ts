@@ -80,7 +80,7 @@ export function itemMergeProperties(sourceProperty: Partial<ItemProperties> | un
 			continue;
 
 		// Curses skip some properties
-		if (!includeNoncursableProperties && CURSE_IGNORED_PROPERTIES.includes(key))
+		if (!includeNoncursableProperties && CURSE_IGNORED_PROPERTIES.has(key))
 			continue;
 
 		// Update base properties
@@ -261,7 +261,7 @@ export function WardrobeDoImport(C: Character, data: ItemBundle[], filter: (a: I
 		const A = AssetGet(C.AssetFamily, cloth.Group, cloth.Name);
 		if (A != null) {
 			if (filter(A)) {
-				CharacterAppearanceSetItem(C, cloth.Group, A, cloth.Color, 0, undefined, false);
+				CharacterAppearanceSetItem(C, cloth.Group, A, cloth.Color);
 				const item = InventoryGet(C, cloth.Group);
 				if (cloth.Property && item) {
 					if (!isObject(cloth.Property)) {

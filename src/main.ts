@@ -18,7 +18,6 @@ function replaceReferencedFunctions() {
 	// Run patching replacer on objects that hold references to patched functions
 	replacePatchedMethodsDeep("ChatRoomViews", ChatRoomViews);
 	replacePatchedMethodsDeep("CurrentScreenFunctions", CurrentScreenFunctions);
-	replacePatchedMethodsDeep("DialogSelfMenuOptions", DialogSelfMenuOptions);
 }
 
 export function init() {
