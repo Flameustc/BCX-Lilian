@@ -587,9 +587,16 @@ export function initRules_bc_blocks() {
 				}, ModuleCategory.Rules);
 			}
 			hookFunction("ChatSearchCreateGridRoomTooltip", 5, (args, next) => {
-				const tooltips = next(args);
+				let tooltips = next(args);
 				const [roomResult] = args;
 				if (isRoomBlocked(roomResult.Name)) {
+					if (tooltips === undefined) {
+						tooltips = ElementCreate({
+							tag: "div",
+							attributes: { id: `chat-search-room-tooltip-${args[1]}` },
+							classList: ["chat-search-room-tooltip"],
+						});
+					}
 					tooltips.appendChild(ElementCreate({
 						tag: "span",
 						classList: ["chat-search-room-tooltip-entry", "chat-search-room-tooltip-bcx-blocked"],
@@ -972,6 +979,28 @@ export function initRules_bc_blocks() {
 		shortDescription: "PLAYER_NAME using her permissions for her own BCX, with some exceptions",
 		longDescription: "This rule forbids PLAYER_NAME access to some parts of their own BCX they have permission to use, making it as if they do not have 'self access' (see BCX tutorial on permission system) while the rule is active. This rule still leaves access for all permissions where the lowest permitted role ('lowest access') is also set to PLAYER_NAME (to prevent getting stuck). This rule does not affect PLAYER_NAME's permissions to use another users's BCX.",
 		keywords: ["limiting", "preventing", "controlling", "accessing", "self", "rights"],
+		defaultLimit: ConditionsLimit.blocked,
+		// Implemented externally
+	});
+
+	registerRule("block_curses_self_by_others", {
+		name: "Prevent accessing curses by others",
+		loggable: false,
+		type: RuleType.Block,
+		shortDescription: "PLAYER_NAME accessing curses placed on herself by others",
+		longDescription: "This rule forbids PLAYER_NAME from accessing (or removing) any curses that were placed on her by other BCX users. This additionally blocks bulk actions and editing the global config to prevent bypassing this rule. PLAYER_NAME can still access (and remove) curses she herself placed. This rule does not affect PLAYER_NAME's permissions to use another users' BCX.",
+		keywords: ["limiting", "preventing", "controling", "accessing", "self", "rights"],
+		defaultLimit: ConditionsLimit.blocked,
+		// Implemented externally
+	});
+
+	registerRule("block_rules_self_by_others", {
+		name: "Prevent accessing rules by others",
+		loggable: false,
+		type: RuleType.Block,
+		shortDescription: "PLAYER_NAME accessing rules placed on herself by others",
+		longDescription: "This rule forbids PLAYER_NAME from accessing (or removing) any rules that were placed on her by other BCX users. This additionally blocks bulk actions and editing the global config to prevent bypassing this rule. PLAYER_NAME can still access (and remove) rules she herself placed. This rule does not affect PLAYER_NAME's permissions to use another users' BCX.",
+		keywords: ["limiting", "preventing", "controling", "accessing", "self", "rights"],
 		defaultLimit: ConditionsLimit.blocked,
 		// Implemented externally
 	});
